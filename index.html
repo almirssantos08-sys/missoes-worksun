@@ -386,8 +386,10 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     const liberado = today() >= per.fim;
     if (!liberado) return `<button class="btn saque" disabled>Sacar dinheiro · libera em ${dmy(per.fim)}</button>`;
     if (!c.valor) return `<div class="note">Meta não batida neste período, sem valor para sacar.</div>`;
-    const msg = `Olá Almir! Quero sacar meu bônus de ${per.nome}: ${brl(c.valor)} (${c.pts} pontos). Enviado pelo app Missões Worksun.`;
-    return `<a class="btn saque" href="https://wa.me/?text=${encodeURIComponent(msg)}" target="_blank" rel="noopener">Sacar dinheiro · ${brl(c.valor)}</a><div class="note">Abre o WhatsApp com o pedido pronto para enviar ao Almir. Pagamento previsto em ${dmy(per.pagamento)}.</div>`;
+    const key = 'ms_saque_' + per.id + '_' + p.id; const feito = LS.get(key);
+    if (feito) return `<button class="btn saque" disabled>Pedido de saque enviado · ${esc(feito)}</button><div class="note">${esc(p.nome)}, seu pedido de ${brl(c.valor)} já foi enviado. Pagamento previsto em ${dmy(per.pagamento)}.</div>`;
+    const msg = `Olá Almir! Aqui é ${p.nome}. Quero sacar meu bônus de ${per.nome}: ${brl(c.valor)} (${c.pts} pontos). Enviado pelo app Missões Worksun.`;
+    return `<button class="btn saque" id="sacar" data-key="${esc(key)}" data-msg="${esc(msg)}">Sacar dinheiro · ${brl(c.valor)}</button><div class="note">Abre o WhatsApp com o pedido de ${esc(p.nome)} pronto para enviar ao Almir. Depois de pedir, o botão fica bloqueado. Pagamento previsto em ${dmy(per.pagamento)}.</div>`;
   }
   function missoesBlock(c) {
     if (c.fromHist && !c.rows.length) return `<div class="empty">Este período foi fechado antes do app. Só o total de pontos foi registrado.</div>`;
@@ -495,7 +497,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
       <b>Trello:</b> cartão completo (checklist e fotos) +3; sem foto ou com item de checklist sem marcar −6 para toda a equipe. O checklist Comissionamento não conta.<br>
       <b>Valor:</b> bateu a meta, ganha R$ 160 (na dupla, R$ 106,67 até novembro e R$ 160 a partir de dezembro). Cada ponto acima da meta vale R$ 1. Até a meta, o valor vai acumulando a cada ponto e libera quando a meta é batida.<br>
       <b>Metas:</b> 2 pessoas 120 / supermeta 145 · 3 pessoas 180 / 200 · 4 pessoas 240 / 270.<br>
-      <b>Período:</b> do dia 10 ao dia 10, pela data em que o cartão foi para Missões concluídas. Pagamento no dia 15.<br>
+      <b>Período:</b> do dia 11 ao dia 10, pela data em que o cartão foi para Missões concluídas. Pagamento no dia 15.<br>
       <b>Capacetes (a partir de dezembro):</b> supermeta em meses seguidos aumenta o bônus do mês. Bronze com 2 meses seguidos (+25%), Prata com 4 (+30%), Ouro com 6 (+35%).<br>
       <b>Meta do time:</b> somando os pontos de produção das missões do mês (cada missão uma vez, sem o bônus do Trello e sem elogio), 300 pontos dá um dia de pizza paga pela Worksun, e 350 pontos dá pizza mais R$ 100 para cada um.</div></details>
       <p class="note">${when ? 'Atualizado do Trello em ' + esc(when) + '.' : ''} Faltas e férias podem reduzir o valor de forma proporcional no fechamento.</p>`;
@@ -509,6 +511,13 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     if (t.dataset.copy) { try { await navigator.clipboard.writeText(t.dataset.copy); t.textContent = 'Copiado'; } catch (e) { t.textContent = 'Copie o link ao lado'; } return; }
     if (t.id === 'trocar') { LS.set('ms_login', ''); S.loginSel = ''; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} renderPicker(); return; }
     if (t.id === 'instalar' && S.installEv) { S.installEv.prompt(); try { await S.installEv.userChoice; } catch (e) {} S.installEv = null; render(); return; }
+    if (t.id === 'sacar') {
+      const w = window.open('https://wa.me/?text=' + encodeURIComponent(t.dataset.msg), '_blank', 'noopener');
+      if (!w) location.href = 'https://wa.me/?text=' + encodeURIComponent(t.dataset.msg);
+      const d = new Date(); const pad = n => String(n).padStart(2, '0');
+      LS.set(t.dataset.key, pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + ' às ' + pad(d.getHours()) + ':' + pad(d.getMinutes()));
+      render(); return;
+    }
     if (t.id === 'instalar-ios') { S.iosTip = !S.iosTip; render(); return; }
     if (t.id === 'pago' && S.isOwner) {
       const per = S.periodos[S.view.periodo]; t.disabled = true;
