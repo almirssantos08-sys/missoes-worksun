@@ -297,12 +297,13 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     const g = Object.assign({ pizza: 300, brinde: 350 }, per.metaGlobal || {});
     const n = placasDoPeriodo(pid); const top = Math.max(g.brinde * 1.1, n);
     const pct = v => Math.min(100, v / top * 100);
-    const falta = n >= g.brinde ? 'Meta do brinde batida! Pizza + brinde para o time 🎉' : n >= g.pizza ? `Pizza garantida! 🍕 Faltam ${g.brinde - n} placas para o brinde` : `Faltam ${g.pizza - n} placas para a pizza 🍕`;
+    const falta = n >= g.brinde ? 'Meta de 350 batida! Pizza + R$ 100 para cada um 🎉' : n >= g.pizza ? `Pizza garantida! 🍕 Faltam ${g.brinde - n} placas para os R$ 100 de cada um` : `Faltam ${g.pizza - n} placas para a pizza 🍕`;
     return `<section class="card gl" aria-label="Meta do time"><div class="row"><h3>Meta do time · ${esc(per.nome)}</h3><span class="note">placas instaladas</span></div>
       <div class="big">${n} <small class="note">placas</small></div>
       <div class="track"><i style="width:${pct(n)}%"></i><span class="mk" style="left:${pct(g.pizza)}%"></span><span class="mk" style="left:${pct(g.brinde)}%"></span></div>
-      <div class="lv"><span class="${n >= g.pizza ? 'ok' : ''}">🍕 ${g.pizza}: dia de pizza${g.dia ? ' (' + esc(g.dia) + ')' : ''}</span><span class="${n >= g.brinde ? 'ok' : ''}">🎁 ${g.brinde}: pizza + brinde</span></div>
-      <div class="note" style="margin-top:6px">${falta}</div></section>`;
+      <div class="lv"><span class="${n >= g.pizza ? 'ok' : ''}">🍕 ${g.pizza}: dia de pizza${g.dia ? ' (' + esc(g.dia) + ')' : ''}</span><span class="${n >= g.brinde ? 'ok' : ''}">💰 ${g.brinde}: pizza + R$ 100 cada</span></div>
+      <div class="note" style="margin-top:6px">${falta}</div>
+      <div class="note" style="border-top:1px solid rgba(255,255,255,.08);padding-top:8px"><b>Observação:</b> a meta do time conta só placa instalada (remoção e remanejo não entram). ${g.pizza} placas: pizza para todos. ${g.brinde} placas: pizza + R$ 100 para cada um.</div></section>`;
   }
   function rankHome(pid, slug) {
     const per = S.periodos[pid]; if (!per) return '';
@@ -496,7 +497,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
       <b>Metas:</b> 2 pessoas 120 / supermeta 145 · 3 pessoas 180 / 200 · 4 pessoas 240 / 270.<br>
       <b>Período:</b> do dia 10 ao dia 10, pela data em que o cartão foi para Missões concluídas. Pagamento no dia 15.<br>
       <b>Capacetes (a partir de dezembro):</b> supermeta em meses seguidos aumenta o bônus do mês. Bronze com 2 meses seguidos (+25%), Prata com 4 (+30%), Ouro com 6 (+35%).<br>
-      <b>Meta do time:</b> somando as placas instaladas por todos no mês, 300 placas dá um dia de pizza paga pela Worksun, e 350 placas dá pizza mais um brinde.</div></details>
+      <b>Meta do time:</b> somando as placas instaladas por todos no mês, 300 placas dá um dia de pizza paga pela Worksun, e 350 placas dá pizza mais R$ 100 para cada um. Conta só placa instalada.</div></details>
       <p class="note">${when ? 'Atualizado do Trello em ' + esc(when) + '.' : ''} Faltas e férias podem reduzir o valor de forma proporcional no fechamento.</p>`;
   }
 
