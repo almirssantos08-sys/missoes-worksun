@@ -189,7 +189,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
       if (m) {
         if (before < m.meta && cum >= m.meta) ef = { kind: 'meta', v: m.fixo + (cum - m.meta) };
         else if (before >= m.meta) ef = { kind: 'rs', v: pts };
-        else ef = { kind: 'rumo', falta: m.meta - cum };
+        else ef = { kind: 'acum', v: pts * m.fixo / m.meta, falta: m.meta - cum };
       }
       return Object.assign({}, x, { pts, before, cum, ef });
     });
@@ -200,7 +200,8 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     if (fromHist) { valor = h.valor == null ? null : h.valor; res = h.resultado || 'abaixo'; }
     else if (m) { valor = pts >= m.meta ? m.fixo + (pts - m.meta) : 0; res = pts >= m.super ? 'supermeta' : pts >= m.meta ? 'meta' : 'abaixo'; }
     const servicos = ms.length || (fromHist ? (h.servicos || null) : 0);
-    return { m, rows, pts, valor, res, servicos, fromHist, hist: h || null, per };
+    const acum = m && !fromHist ? (pts >= m.meta ? m.fixo + (pts - m.meta) : Math.max(0, pts) * m.fixo / m.meta) : valor;
+    return { m, rows, pts, valor, acum, res, servicos, fromHist, hist: h || null, per };
   }
 
   function streak(slug) {
@@ -303,7 +304,10 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     let pill = c.res === 'supermeta' ? '<span class="pill super">Supermeta</span>' : c.res === 'meta' ? '<span class="pill meta">Meta batida</span>' : '<span class="pill rumo">Rumo à meta</span>';
     let lbl = per.fechado ? (pago ? 'Pago em ' + dmy(per.pagamento) : 'Valor final · a receber em ' + dmy(per.pagamento)) : 'Valor final previsto · paga em ' + dmy(per.pagamento);
     let h = `<section class="hero" aria-label="Saldo"><div class="row"><span class="lbl">${esc(lbl)}</span>${pago ? '<span class="pill pago">Pago</span>' : pill}</div>`;
-    h += c.valor == null ? `<div class="money zero">${c.pts} pts</div><div class="sub">Período anterior ao app: o valor foi pago fora daqui.</div>` : `<div class="money ${c.valor ? '' : 'zero'}">${brl(c.valor)}</div>`;
+    if (c.valor == null) h += `<div class="money zero">${c.pts} pts</div><div class="sub">Período anterior ao app: o valor foi pago fora daqui.</div>`;
+    else if (m && !per.fechado && c.pts < m.meta) h += `<div class="money">${brl(c.acum)}</div><div class="sub">Acumulado até agora. Libera quando você bater a meta: faltam <b>${m.meta - c.pts} pts</b>.</div>`;
+    else if (m && per.fechado && c.pts < m.meta) h += `<div class="money zero">${brl(0)}</div><div class="sub">A meta não foi batida neste período (${c.pts} de ${m.meta} pts).</div>`;
+    else h += `<div class="money ${c.valor ? '' : 'zero'}">${brl(c.valor)}</div>`;
     if (m) {
       const max = Math.max(m.super * 1.25, c.pts * 1.05, 1);
       const pct = v => Math.max(0, Math.min(100, v / max * 100));
@@ -311,7 +315,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
       h += `<div class="stats"><div class="stat"><b>${c.pts}</b><span>pontos</span></div><div class="stat"><b>${c.servicos == null ? '–' : c.servicos}</b><span>missões</span></div><div class="stat"><b>${c.pts >= m.meta ? '+' + (c.pts - m.meta) : m.meta - c.pts}</b><span>${c.pts >= m.meta ? 'acima da meta' : 'faltam p/ meta'}</span></div></div>`;
       if (!per.fechado) {
         let nx;
-        if (c.pts < m.meta) nx = `Faltam <b>${m.meta - c.pts} pts</b> para destravar <b>${brl(m.fixo)}</b>.`;
+        if (c.pts < m.meta) nx = `Cada ponto vale <b>${brl(m.fixo / m.meta)}</b> até a meta e <b>${brl(1)}</b> depois dela. Na meta, o acumulado vira <b>${brl(m.fixo)}</b>.`;
         else if (c.pts < m.super) nx = `Cada ponto agora vale <b>+${brl(1)}</b>. Faltam <b>${m.super - c.pts} pts</b> para a supermeta, que conta para o capacete.`;
         else nx = `Supermeta garantida. Cada ponto a mais vale <b>+${brl(1)}</b>.`;
         h += `<div class="next">${nx}</div>`;
@@ -351,7 +355,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
       let e = '';
       if (r.ef.kind === 'meta') e = `<div class="e meta">Meta batida · ${brl(r.ef.v)}</div>`;
       else if (r.ef.kind === 'rs') e = `<div class="e rs">${r.pts >= 0 ? '+' : '−'}${brl(Math.abs(r.ef.v))}</div>`;
-      else if (r.ef.kind === 'rumo') e = `<div class="e">faltam ${r.ef.falta}</div>`;
+      else if (r.ef.kind === 'acum') e = `<div class="e rs" style="opacity:.75">${r.pts >= 0 ? '+' : '−'}${brl(Math.abs(r.ef.v))}</div>`;
       return `<div class="item"><div class="ico">${ICONS[r.tipo] || ICONS.instalacao}</div><div><div class="c">${esc(r.cliente)}</div><div class="d">${r.semData ? '' : dm(r.data) + ' · '}${esc(TIPO[r.tipo] || r.tipo)}${r.detalhe && r.detalhe !== (TIPO[r.tipo] || '') ? ' · ' + esc(r.detalhe) : ''}</div>${tags.length ? `<div class="tags">${tags.join('')}</div>` : ''}</div><div class="right"><div class="p ${r.pts < 0 ? 'neg' : ''}">${r.pts >= 0 ? '+' : ''}${r.pts}</div>${e}</div></div>`;
     }).join('') + `</div>`;
   }
