@@ -179,7 +179,13 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     return open ? open.id : null;
   }
 
-  function calc(pid, slug) {
+  const CAP_DESDE = '2026-12';
+  function streakAt(pid, slug) {
+    const ps = periodsSorted(); let i = ps.findIndex(p => p.id === pid); let n = 0;
+    for (; i >= 0; i--) { const c = calc(ps[i].id, slug, true); if (c.res === 'supermeta') n++; else break; }
+    return n;
+  }
+  function calc(pid, slug, base) {
     const per = S.periodos[pid]; const m = per && per.metas ? per.metas[slug] : null;
     const ms = S.missoes.filter(x => x.periodo === pid && (x.pessoas || []).includes(slug))
       .sort((a, b) => (a.data + (a.ordem || '') + a.cliente) < (b.data + (b.ordem || '') + b.cliente) ? -1 : 1);
@@ -200,8 +206,13 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     if (fromHist) { valor = h.valor == null ? null : h.valor; res = h.resultado || 'abaixo'; }
     else if (m) { valor = pts >= m.meta ? m.fixo + (pts - m.meta) : 0; res = pts >= m.super ? 'supermeta' : pts >= m.meta ? 'meta' : 'abaixo'; }
     const servicos = ms.length || (fromHist ? (h.servicos || null) : 0);
-    const acum = m && !fromHist ? (pts >= m.meta ? m.fixo + (pts - m.meta) : Math.max(0, pts) * m.fixo / m.meta) : valor;
-    return { m, rows, pts, valor, acum, res, servicos, fromHist, hist: h || null, per };
+    let acum = m && !fromHist ? (pts >= m.meta ? m.fixo + (pts - m.meta) : Math.max(0, pts) * m.fixo / m.meta) : valor;
+    let cap = null;
+    if (!base && m && !fromHist && pid >= CAP_DESDE && res === 'supermeta') {
+      const n = streakAt(pid, slug); const t = n >= 6 ? ['Ouro', 0.35] : n >= 4 ? ['Prata', 0.30] : n >= 2 ? ['Bronze', 0.25] : null;
+      if (t) { const extra = Math.round(valor * t[1] * 100) / 100; cap = { nome: t[0], pct: t[1], extra, meses: n }; valor += extra; acum += extra; }
+    }
+    return { m, rows, pts, valor, acum, cap, res, servicos, fromHist, hist: h || null, per };
   }
 
   function streak(slug) {
@@ -308,6 +319,12 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     else if (m && !per.fechado && c.pts < m.meta) h += `<div class="money">${brl(c.acum)}</div><div class="sub">Acumulado até agora. Libera quando você bater a meta: faltam <b>${m.meta - c.pts} pts</b>.</div>`;
     else if (m && per.fechado && c.pts < m.meta) h += `<div class="money zero">${brl(0)}</div><div class="sub">A meta não foi batida neste período (${c.pts} de ${m.meta} pts).</div>`;
     else h += `<div class="money ${c.valor ? '' : 'zero'}">${brl(c.valor)}</div>`;
+    if (c.cap) h += `<div class="next">🪖 <b>Capacete de ${c.cap.nome}</b> (${c.cap.meses} meses seguidos de supermeta): +${Math.round(c.cap.pct * 100)}% no bônus, <b>+${brl(c.cap.extra)}</b> já somados.</div>`;
+    else if (m && !c.fromHist && per.id >= CAP_DESDE && !per.fechado) {
+      const prev = streakAt(per.id, p.id) || 0; const ant = c.res === 'supermeta' ? prev : (() => { const ps = periodsSorted(); const i = ps.findIndex(x => x.id === per.id); return i > 0 ? streakAt(ps[i - 1].id, p.id) : 0; })();
+      const alvo = ant + 1; const t = alvo >= 6 ? ['Ouro', 35] : alvo >= 4 ? ['Prata', 30] : alvo >= 2 ? ['Bronze', 25] : null;
+      if (t && c.res !== 'supermeta') h += `<div class="next">🪖 Batendo a supermeta (${m.super} pts) neste mês, você ganha o <b>Capacete de ${t[0]}</b>: +${t[1]}% em todo o bônus do mês.</div>`;
+    }
     if (m) {
       const max = Math.max(m.super * 1.25, c.pts * 1.05, 1);
       const pct = v => Math.max(0, Math.min(100, v / max * 100));
@@ -378,7 +395,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     const n = streak(slug);
     const tiers = [['Bronze', 2, '+25%', '#C98A4B'], ['Prata', 4, '+30%', '#C9D3DB'], ['Ouro', 6, '+35%', '#E9C24A']];
     const next = tiers.find(t => n < t[1]);
-    let h = `<div class="card"><h3>${n} ${n === 1 ? 'mês' : 'meses'} seguidos de supermeta</h3><div class="note">${next ? `Faltam ${next[1] - n} para o Capacete de ${next[0]}.` : 'Você chegou ao Capacete de Ouro.'} A sequência zera no mês em que a supermeta não vier.</div></div>`;
+    let h = `<div class="card"><h3>${n} ${n === 1 ? 'mês' : 'meses'} seguidos de supermeta</h3><div class="note">${next ? `Faltam ${next[1] - n} para o Capacete de ${next[0]}.` : 'Você chegou ao Capacete de Ouro.'} A sequência zera no mês em que a supermeta não vier. A partir de dezembro, o capacete aumenta o bônus do mês.</div></div>`;
     h += `<div class="helmets">` + tiers.map(t => `<div class="helmet ${n >= t[1] ? 'on' : ''}">${HELMET(t[3])}<b>${t[0]}</b><span>${t[1]} meses · ${t[2]}</span></div>`).join('') + `</div>`;
     const ps = periodsSorted().slice().reverse();
     h += `<div class="histwrap"><table class="hist"><thead><tr><th>Período</th><th class="n">Pontos</th><th>Resultado</th><th class="n">Valor</th></tr></thead><tbody>` +
@@ -433,10 +450,10 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     return `<details class="card"><summary>Como os pontos e o valor são calculados</summary><div class="rules">
       <b>Pontos por missão:</b> +1 por módulo (ou placa removida/remanejada), +5 padrão de entrada, +7 manutenção, +7 serviço elétrico de dia todo, +3 de meio-dia, +4 elogio do cliente.<br>
       <b>Trello:</b> cartão completo (checklist e fotos) +3; incompleto −6.<br>
-      <b>Valor:</b> bateu a meta, ganha R$ 160 (no time de 3 e na dupla). Cada ponto acima da meta vale R$ 1. Até a meta, o valor vai acumulando a cada ponto e libera quando a meta é batida.<br>
+      <b>Valor:</b> bateu a meta, ganha R$ 160 (na dupla, R$ 106,67 até novembro e R$ 160 a partir de dezembro). Cada ponto acima da meta vale R$ 1. Até a meta, o valor vai acumulando a cada ponto e libera quando a meta é batida.<br>
       <b>Metas:</b> 2 pessoas 120 / supermeta 145 · 3 pessoas 180 / 200 · 4 pessoas 240 / 270.<br>
       <b>Período:</b> do dia 10 ao dia 10, pela data em que o cartão foi para Missões concluídas. Pagamento no dia 15.<br>
-      <b>Capacetes:</b> Bronze com 2 meses seguidos de supermeta, Prata com 4, Ouro com 6.</div></details>
+      <b>Capacetes (a partir de dezembro):</b> supermeta em meses seguidos aumenta o bônus do mês. Bronze com 2 meses seguidos (+25%), Prata com 4 (+30%), Ouro com 6 (+35%).</div></details>
       <p class="note">${when ? 'Atualizado do Trello em ' + esc(when) + '.' : ''} Faltas e férias podem reduzir o valor de forma proporcional no fechamento.</p>`;
   }
 
