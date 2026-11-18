@@ -492,7 +492,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     const s = S.sync; const when = s && s.em ? new Date(s.em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : null;
     return `<details class="card"><summary>Como os pontos e o valor são calculados</summary><div class="rules">
       <b>Pontos por missão:</b> +1 por módulo (ou placa removida/remanejada), +5 padrão de entrada, +7 manutenção, +7 serviço elétrico de dia todo, +3 de meio-dia, +4 elogio do cliente.<br>
-      <b>Trello:</b> cartão completo (checklist e fotos) +3; incompleto −6.<br>
+      <b>Trello:</b> cartão completo (checklist e fotos) +3; sem foto ou com item de checklist sem marcar −6 para toda a equipe. O checklist Comissionamento não conta.<br>
       <b>Valor:</b> bateu a meta, ganha R$ 160 (na dupla, R$ 106,67 até novembro e R$ 160 a partir de dezembro). Cada ponto acima da meta vale R$ 1. Até a meta, o valor vai acumulando a cada ponto e libera quando a meta é batida.<br>
       <b>Metas:</b> 2 pessoas 120 / supermeta 145 · 3 pessoas 180 / 200 · 4 pessoas 240 / 270.<br>
       <b>Período:</b> do dia 10 ao dia 10, pela data em que o cartão foi para Missões concluídas. Pagamento no dia 15.<br>
