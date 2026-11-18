@@ -127,8 +127,8 @@ table.hist td.n, table.hist th.n { text-align: right; }
 .gl .lv { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
 .gl .lv span.ok { color: var(--lime); font-weight: 700; }
 .gl .big { font-size: 28px; font-weight: 800; }
-.boneco-card { display: flex; gap: 14px; align-items: center; }
-.boneco-card .boneco { flex: none; }
+.card.boneco-card { display: flex; flex-direction: row; gap: 14px; align-items: center; }
+.card.boneco-card .boneco { flex: none; width: 96px; height: 96px; }
 .rk .nm .boneco { vertical-align: -6px; margin-right: 6px; }
 .rk { display: grid; grid-template-columns: 28px 1fr 30% 40px; gap: 8px; align-items: center; font-size: 14px; padding: 6px 4px; border-radius: 8px; }
 .rk.me { background: var(--raised-2); }
@@ -439,7 +439,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     const n = streak(slug);
     const tiers = TIERS;
     const next = tiers.find(t => n < t[1]);
-    let h = `<div class="card"><h3>${n} ${n === 1 ? 'mês' : 'meses'} seguidos de supermeta</h3><div class="note">${next ? `Faltam ${next[1] - n} para o Capacete de ${next[0]}.` : 'Você chegou ao Capacete de Ouro.'} A sequência zera no mês em que a supermeta não vier. A partir de dezembro, o capacete aumenta o bônus do mês.</div></div>`;
+    let h = `<div class="card"><h3>${n === 0 ? 'Nenhuma supermeta seguida ainda' : n === 1 ? '1 mês de supermeta' : n + ' meses seguidos de supermeta'}</h3><div class="note">${next ? `Faltam ${next[1] - n} para o Capacete de ${next[0]}.` : 'Você chegou ao Capacete de Ouro.'} A sequência zera no mês em que a supermeta não vier. A partir de dezembro, o capacete aumenta o bônus do mês.</div></div>`;
     h += `<div class="helmets">` + tiers.map(t => `<div class="helmet ${n >= t[1] ? 'on' : ''}">${HELMET(t[3])}<b>${t[0]}</b><span>${t[1]} meses · ${t[2]}</span></div>`).join('') + `</div>`;
     const cur = tierOf(n);
     h += `<div class="card boneco-card">${BONECO(cur ? cur[3] : '#8A97A3', 120)}<div><h3>${cur ? 'Capacete de ' + cur[0] : 'Ainda sem capacete'}</h3><div class="note">${cur ? `Você está com o Capacete de ${cur[0]} (${cur[2]} no bônus a partir de dezembro).` : 'Com 2 meses seguidos de supermeta, você ganha o Capacete de Bronze.'}</div></div></div>`;
