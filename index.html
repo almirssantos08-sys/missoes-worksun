@@ -127,6 +127,9 @@ table.hist td.n, table.hist th.n { text-align: right; }
 .gl .lv { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; }
 .gl .lv span.ok { color: var(--lime); font-weight: 700; }
 .gl .big { font-size: 28px; font-weight: 800; }
+.boneco-card { display: flex; gap: 14px; align-items: center; }
+.boneco-card .boneco { flex: none; }
+.rk .nm .boneco { vertical-align: -6px; margin-right: 6px; }
 .rk { display: grid; grid-template-columns: 28px 1fr 30% 40px; gap: 8px; align-items: center; font-size: 14px; padding: 6px 4px; border-radius: 8px; }
 .rk.me { background: var(--raised-2); }
 .rk .pos { text-align: center; }
@@ -309,7 +312,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     const max = Math.max(...rs.map(x => x.c.pts), 1); const med = ['🥇', '🥈', '🥉'];
     return `<section class="card" aria-label="Ranking do time"><div class="row"><h3>Ranking do time · ${esc(per.nome)}</h3><span class="note">pontos</span></div>` + rs.map((x, i) => {
       const p = S.pessoas[x.s]; const tag = x.c.res === 'supermeta' ? '<span class="pill super">Super</span>' : x.c.res === 'meta' ? '<span class="pill meta">Meta</span>' : '';
-      return `<div class="rk ${x.s === slug ? 'me' : ''}"><span class="pos">${med[i] || (i + 1) + 'º'}</span><span class="nm">${esc(p.nome)} ${tag}</span><span class="bar"><i style="width:${x.c.pts / max * 100}%"></i></span><b>${x.c.pts}</b></div>`;
+      return `<div class="rk ${x.s === slug ? 'me' : ''}"><span class="pos">${med[i] || (i + 1) + 'º'}</span><span class="nm">${(t => BONECO(t ? t[3] : '#8A97A3', 22))(tierOf(streak(x.s)))}${esc(p.nome)} ${tag}</span><span class="bar"><i style="width:${x.c.pts / max * 100}%"></i></span><b>${x.c.pts}</b></div>`;
     }).join('') + `</section>`;
   }
   function installBlock() {
@@ -418,16 +421,28 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     if (!pend.length) return `<div class="empty">Nenhuma pendência nos seus cartões. Cartão completo vale +3 em cada missão.</div>`;
     return `<div class="list">` + pend.map(p => `<div class="card"><h3>${esc(p.cliente)}</h3><ul>${(p.falta || []).map(f => `<li>${esc(f)}</li>`).join('')}</ul>${p.ganho ? `<div class="gain">Completando o cartão: +${esc(p.ganho)} pts</div>` : ''}${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">Abrir no Trello</a>` : ''}</div>`).join('') + `</div><p class="note">As pendências são conferidas no Trello de hora em hora. Corrigiu o cartão? Ele sai desta lista na próxima atualização.</p>`;
   }
+  const TIERS = [['Bronze', 2, '+25%', '#C98A4B'], ['Prata', 4, '+30%', '#C9D3DB'], ['Ouro', 6, '+35%', '#E9C24A']];
+  function tierOf(n) { return n >= 6 ? TIERS[2] : n >= 4 ? TIERS[1] : n >= 2 ? TIERS[0] : null; }
+  function BONECO(cor, w) {
+    return `<svg class="boneco" width="${w}" height="${w}" viewBox="0 0 64 64" aria-hidden="true">
+      <path d="M18 62 v-12 a14 12 0 0 1 28 0 v12z" fill="#2F4A63"/>
+      <path d="M26 39 h12 l-2 23 h-8z" fill="#B8E14E" opacity=".9"/>
+      <circle cx="32" cy="28" r="10" fill="#E8B98A"/>
+      <circle cx="28.5" cy="29" r="1.3" fill="#142231"/><circle cx="35.5" cy="29" r="1.3" fill="#142231"/>
+      <path d="M28.5 33 q3.5 2.6 7 0" stroke="#142231" stroke-width="1.4" fill="none" stroke-linecap="round"/>
+      <path d="M20 24 a12 11 0 0 1 24 0z" fill="${cor}"/>
+      <rect x="17" y="23" width="30" height="4" rx="2" fill="${cor}"/>
+      <rect x="30.5" y="13.5" width="3" height="10" rx="1.5" fill="rgba(0,0,0,.18)"/>
+    </svg>`;
+  }
   function capacetesBlock(slug) {
     const n = streak(slug);
-    const tiers = [['Bronze', 2, '+25%', '#C98A4B'], ['Prata', 4, '+30%', '#C9D3DB'], ['Ouro', 6, '+35%', '#E9C24A']];
+    const tiers = TIERS;
     const next = tiers.find(t => n < t[1]);
     let h = `<div class="card"><h3>${n} ${n === 1 ? 'mês' : 'meses'} seguidos de supermeta</h3><div class="note">${next ? `Faltam ${next[1] - n} para o Capacete de ${next[0]}.` : 'Você chegou ao Capacete de Ouro.'} A sequência zera no mês em que a supermeta não vier. A partir de dezembro, o capacete aumenta o bônus do mês.</div></div>`;
     h += `<div class="helmets">` + tiers.map(t => `<div class="helmet ${n >= t[1] ? 'on' : ''}">${HELMET(t[3])}<b>${t[0]}</b><span>${t[1]} meses · ${t[2]}</span></div>`).join('') + `</div>`;
-    const ps = periodsSorted().slice().reverse();
-    h += `<div class="histwrap"><table class="hist"><thead><tr><th>Período</th><th class="n">Pontos</th><th>Resultado</th><th class="n">Valor</th></tr></thead><tbody>` +
-      ps.map(p => { const c = calc(p.id, slug); if (!c.m && !c.fromHist) return ''; const r = c.res === 'supermeta' ? 'Supermeta' : c.res === 'meta' ? 'Meta' : '–';
-        return `<tr><td>${esc(p.nome)}${!p.fechado ? ' (em andamento)' : ''}</td><td class="n">${c.pts}</td><td>${r}</td><td class="n">${c.valor ? brl(c.valor) : '–'}</td></tr>`; }).join('') + `</tbody></table></div>`;
+    const cur = tierOf(n);
+    h += `<div class="card boneco-card">${BONECO(cur ? cur[3] : '#8A97A3', 120)}<div><h3>${cur ? 'Capacete de ' + cur[0] : 'Ainda sem capacete'}</h3><div class="note">${cur ? `Você está com o Capacete de ${cur[0]} (${cur[2]} no bônus a partir de dezembro).` : 'Com 2 meses seguidos de supermeta, você ganha o Capacete de Bronze.'}</div></div></div>`;
     return h;
   }
   function adminBlock(pid) {
