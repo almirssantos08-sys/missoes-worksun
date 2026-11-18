@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Regras · Missões Worksun</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#142231">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --navy: #142231; --raised: #1D3144; --raised-2: #26405A; --line: #2E4A64;
+  --lime: #B8E14E; --ink: #F4F1F4; --muted: #9FB0BF; --good: #7DD8A2; --bad: #F28B82; --warn: #F2B544;
+  --font: 'Poppins', 'Segoe UI', Arial, sans-serif; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--navy); color: var(--ink); font-family: var(--font); }
+.wrap { max-width: 520px; margin: 0 auto; padding: 16px 16px 48px; }
+.top { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.brand { font-size: 22px; font-weight: 700; letter-spacing: -0.3px; }
+.brand .dot { color: var(--lime); }
+.brand small { font-size: 13px; font-weight: 500; color: var(--muted); margin-left: 8px; }
+.back { color: var(--navy); background: var(--lime); text-decoration: none; font-weight: 600; font-size: 14px; padding: 8px 14px; border-radius: 10px; }
+h1 { font-size: 24px; margin: 8px 0 4px; }
+.lead { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+nav.idx { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; }
+nav.idx a { border: 1px solid var(--line); color: var(--muted); border-radius: 999px; padding: 5px 11px; font-size: 12.5px; text-decoration: none; }
+section { background: var(--raised); border-radius: 12px; padding: 14px 16px; margin-bottom: 12px; scroll-margin-top: 12px; }
+h2 { font-size: 17px; margin: 0 0 8px; display: flex; gap: 8px; align-items: center; }
+h2 .n { background: var(--lime); color: var(--navy); border-radius: 999px; width: 24px; height: 24px; display: inline-grid; place-items: center; font-size: 13px; flex: none; }
+p, li { font-size: 14px; line-height: 1.55; }
+p { margin: 6px 0; }
+ul { margin: 6px 0; padding-left: 18px; }
+table { width: 100%; border-collapse: collapse; font-size: 14px; margin: 6px 0; }
+td, th { padding: 7px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+th { color: var(--muted); font-weight: 500; font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+td.r, th.r { text-align: right; white-space: nowrap; }
+.pos { color: var(--good); font-weight: 600; }
+.neg { color: var(--bad); font-weight: 600; }
+.lime { color: var(--lime); font-weight: 600; }
+.box { background: var(--raised-2); border-radius: 10px; padding: 10px 12px; margin-top: 8px; font-size: 13.5px; }
+.flow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: 13px; margin: 8px 0; }
+.flow span { background: var(--raised-2); border-radius: 8px; padding: 5px 9px; }
+.helmets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
+.helmet { background: var(--raised-2); border-radius: 10px; padding: 10px 6px; text-align: center; font-size: 12.5px; }
+.helmet b { display: block; font-size: 14px; margin-top: 4px; }
+.helmet span { color: var(--muted); }
+.foot { color: var(--muted); font-size: 12px; text-align: center; margin-top: 16px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand">worksun<span class="dot">.</span><small>Missões</small></div>
+    <a class="back" href="index.html">← Voltar ao app</a>
+  </div>
+
+  <h1>Regras do jogo</h1>
+  <p class="lead">Tudo o que vale ponto, quanto você ganha e quando recebe. Na dúvida, vale o que está aqui.</p>
+
+  <nav class="idx" aria-label="Seções">
+    <a href="#mes">Mês</a><a href="#metas">Metas</a><a href="#pontos">Pontos</a><a href="#trello">Trello</a><a href="#valor">Valor</a><a href="#capacetes">Capacetes</a><a href="#time">Meta do time</a><a href="#faltas">Faltas</a><a href="#saque">Pagamento</a>
+  </nav>
+
+  <section id="mes">
+    <h2><span class="n">1</span>O mês da meta</h2>
+    <p>O mês da meta vai do <b>dia 11 até o dia 10</b> do mês seguinte. Exemplo: a meta de Novembro vai de 11/11 a 10/12.</p>
+    <p>Cada cartão conta no mês em que foi concluído no Trello (movido para "Missões concluídas").</p>
+  </section>
+
+  <section id="metas">
+    <h2><span class="n">2</span>Metas por tamanho do time</h2>
+    <table>
+      <thead><tr><th>Time</th><th class="r">Meta</th><th class="r">Supermeta</th></tr></thead>
+      <tbody>
+        <tr><td>2 pessoas (dupla)</td><td class="r">120 pts</td><td class="r">145 pts</td></tr>
+        <tr><td>3 pessoas</td><td class="r">180 pts</td><td class="r">200 pts</td></tr>
+        <tr><td>4 pessoas</td><td class="r">240 pts</td><td class="r">270 pts</td></tr>
+      </tbody>
+    </table>
+    <p>Os pontos são de cada pessoa: todo mundo que participou da missão recebe os pontos inteiros dela.</p>
+  </section>
+
+  <section id="pontos">
+    <h2><span class="n">3</span>O que vale ponto</h2>
+    <table>
+      <tbody>
+        <tr><td>Módulo instalado (por placa)</td><td class="r pos">+1</td></tr>
+        <tr><td>Placa removida ou remanejada (por placa)</td><td class="r pos">+1</td></tr>
+        <tr><td>Padrão de entrada</td><td class="r pos">+5</td></tr>
+        <tr><td>Manutenção</td><td class="r pos">+7</td></tr>
+        <tr><td>Serviço elétrico que toma o dia todo</td><td class="r pos">+7</td></tr>
+        <tr><td>Serviço elétrico de meio dia</td><td class="r pos">+3</td></tr>
+        <tr><td>Elogio do cliente</td><td class="r pos">+4</td></tr>
+        <tr><td>Trello completo (checklist + fotos)</td><td class="r pos">+3</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:12px"><b>O que tira ponto</b></p>
+    <table>
+      <tbody>
+        <tr><td>Goteira ou falha crítica</td><td class="r neg">−10</td></tr>
+        <tr><td>Trello incompleto (checklist ou fotos faltando)</td><td class="r neg">−6</td></tr>
+        <tr><td>Almoxarifado desorganizado</td><td class="r neg">−6</td></tr>
+        <tr><td>Ferramentas desorganizadas ou sujas</td><td class="r neg">−5</td></tr>
+        <tr><td>Cada pack de 60 telhas quebradas no mês</td><td class="r neg">−10</td></tr>
+        <tr><td>Telha de fibrocimento quebrada (conta como 3 telhas)</td><td class="r neg">−25</td></tr>
+      </tbody>
+    </table>
+    <div class="box">Obras com viagem podem valer pontos em dobro, a critério da gestão (exemplo: Recife em outubro).</div>
+  </section>
+
+  <section id="trello">
+    <h2><span class="n">4</span>Trello: onde os pontos nascem</h2>
+    <div class="flow"><span>📋 Checklist 100%</span>→<span>📸 Fotos completas</span>→<span>📊 Status certo</span>→<span>🏆 Pontos garantidos</span></div>
+    <p>Cartão completo ganha <span class="pos">+3</span>. Cartão com checklist sem marcar ou sem fotos perde <span class="neg">−6</span>. Ou seja, completar um cartão vale <b>9 pontos de diferença</b>.</p>
+    <p>A aba <b>Pendências</b> do app mostra o que falta em cada cartão seu. Corrigiu no Trello? O app atualiza sozinho ao longo do dia.</p>
+    <p>Serviço feito sem cartão no Trello pode ser lançado pela gestão, mas não ganha os +3.</p>
+  </section>
+
+  <section id="valor">
+    <h2><span class="n">5</span>Quanto você ganha</h2>
+    <ul>
+      <li>Bateu a meta: <span class="lime">R$ 160</span>.</li>
+      <li>Cada ponto acima da meta: <span class="lime">+R$ 1</span>.</li>
+      <li>Até bater a meta, o valor vai acumulando a cada ponto no app, e só é liberado quando a meta é batida.</li>
+      <li>A supermeta não dá dinheiro extra no mês, mas conta para os capacetes.</li>
+      <li>Dupla: em outubro e novembro de 2026, R$ 106,67 ao bater a meta. <b>A partir de dezembro, R$ 160</b>, igual a todo mundo.</li>
+    </ul>
+    <div class="box"><b>Exemplo (time de 3):</b> fez 295 pontos. Meta 180 → R$ 160. Passou 115 pontos → +R$ 115. <b>Total R$ 275.</b></div>
+  </section>
+
+  <section id="capacetes">
+    <h2><span class="n">6</span>Capacetes</h2>
+    <p>Bater a supermeta em meses seguidos dá capacete, e o capacete aumenta o bônus do mês. <b>Vale a partir de dezembro de 2026.</b></p>
+    <div class="helmets">
+      <div class="helmet">🥉<b>Bronze</b><span>2 meses seguidos<br>+25% no bônus</span></div>
+      <div class="helmet">🥈<b>Prata</b><span>4 meses seguidos<br>+30% no bônus</span></div>
+      <div class="helmet">🥇<b>Ouro</b><span>6 meses seguidos<br>+35% no bônus</span></div>
+    </div>
+    <p>Se a supermeta não vier em um mês, a sequência volta a zero. O boneco no app mostra o capacete de cada um.</p>
+  </section>
+
+  <section id="time">
+    <h2><span class="n">7</span>Meta do time</h2>
+    <p>Somamos os pontos de produção de todas as missões do mês, <b>cada missão contada uma vez</b> (não importa quantas pessoas foram):</p>
+    <ul>
+      <li><b>Entram:</b> módulos instalados, placas removidas e remanejadas, padrão, manutenção e serviço elétrico.</li>
+      <li><b>Não entram:</b> o bônus do Trello (+3/−6) e elogio do cliente.</li>
+    </ul>
+    <table>
+      <tbody>
+        <tr><td>🍕 300 pontos</td><td class="r">Pizza para todos</td></tr>
+        <tr><td>💰 350 pontos</td><td class="r">Pizza + R$ 100 para cada um</td></tr>
+      </tbody>
+    </table>
+    <p>A barra na tela inicial do app mostra quantos pontos o time já fez no mês.</p>
+  </section>
+
+  <section id="faltas">
+    <h2><span class="n">8</span>Faltas, férias e ausências</h2>
+    <p>Faltas, férias e dias ausentes reduzem o valor na proporção dos dias trabalhados na obra.</p>
+    <div class="box"><b>Exemplo:</b> obra de 160 pontos em 12 dias.<br>
+      Trabalhou os 12 dias → 160 × 12/12 = <b>160 pts</b><br>
+      Trabalhou 5 dias → 160 × 5/12 = <b>66,67 pts</b><br>
+      Trabalhou 1 dia → 160 × 1/12 = <b>13,33 pts</b></div>
+  </section>
+
+  <section id="saque">
+    <h2><span class="n">9</span>Pagamento</h2>
+    <ul>
+      <li>O mês fecha no dia 10. A partir daí aparece o botão <b>Sacar dinheiro</b> no app com o valor final.</li>
+      <li>O pagamento cai no <b>dia 15</b>.</li>
+      <li>Antes de pagar, a gestão confere os cartões. Ponto lançado errado pode ser corrigido.</li>
+    </ul>
+  </section>
+
+  <p class="foot">Worksun · Vamos jogar para ganhar!</p>
+</div>
+</body>
+</html>

@@ -130,6 +130,7 @@ table.hist td.n, table.hist th.n { text-align: right; }
 .card.boneco-card { display: flex; flex-direction: row; gap: 14px; align-items: center; }
 .card.boneco-card .boneco { flex: none; width: 96px; height: 96px; }
 .rk .nm .boneco { vertical-align: -6px; margin-right: 6px; }
+.top .regras-btn { margin-left: auto; color: var(--lime); border: 1px solid var(--lime); border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 600; text-decoration: none; }
 .rk { display: grid; grid-template-columns: 28px 1fr 30% 40px; gap: 8px; align-items: center; font-size: 14px; padding: 6px 4px; border-radius: 8px; }
 .rk.me { background: var(--raised-2); }
 .rk .pos { text-align: center; }
@@ -286,24 +287,23 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
 
   const GLOBAL_DESDE = '2026-11';
   function placasDoPeriodo(pid) {
+    // Meta do time: pontos de produção de cada missão do mês, contada uma vez. Não entram o bônus/desconto do Trello nem elogio.
     let n = 0;
-    S.missoes.filter(m => m.periodo === pid && m.tipo === 'instalacao').forEach(m => {
-      const r = /(\d+)\s*(m[óo]dulo|placa)/i.exec(m.detalhe || ''); if (r) n += +r[1];
-    });
-    return n;
+    S.missoes.filter(m => m.periodo === pid && m.tipo !== 'elogio').forEach(m => { n += (Number(m.pts) || 0) - (Number(m.trello) || 0); });
+    return Math.round(n);
   }
   function globalBlock(pid) {
     const per = S.periodos[pid]; if (!per || pid < GLOBAL_DESDE) return '';
     const g = Object.assign({ pizza: 300, brinde: 350 }, per.metaGlobal || {});
     const n = placasDoPeriodo(pid); const top = Math.max(g.brinde * 1.1, n);
     const pct = v => Math.min(100, v / top * 100);
-    const falta = n >= g.brinde ? 'Meta de 350 batida! Pizza + R$ 100 para cada um 🎉' : n >= g.pizza ? `Pizza garantida! 🍕 Faltam ${g.brinde - n} placas para os R$ 100 de cada um` : `Faltam ${g.pizza - n} placas para a pizza 🍕`;
-    return `<section class="card gl" aria-label="Meta do time"><div class="row"><h3>Meta do time · ${esc(per.nome)}</h3><span class="note">placas instaladas</span></div>
-      <div class="big">${n} <small class="note">placas</small></div>
+    const falta = n >= g.brinde ? 'Meta de 350 batida! Pizza + R$ 100 para cada um 🎉' : n >= g.pizza ? `Pizza garantida! 🍕 Faltam ${g.brinde - n} pontos para os R$ 100 de cada um` : `Faltam ${g.pizza - n} pontos para a pizza 🍕`;
+    return `<section class="card gl" aria-label="Meta do time"><div class="row"><h3>Meta do time · ${esc(per.nome)}</h3><span class="note">pontos do time</span></div>
+      <div class="big">${n} <small class="note">pontos</small></div>
       <div class="track"><i style="width:${pct(n)}%"></i><span class="mk" style="left:${pct(g.pizza)}%"></span><span class="mk" style="left:${pct(g.brinde)}%"></span></div>
       <div class="lv"><span class="${n >= g.pizza ? 'ok' : ''}">🍕 ${g.pizza}: dia de pizza${g.dia ? ' (' + esc(g.dia) + ')' : ''}</span><span class="${n >= g.brinde ? 'ok' : ''}">💰 ${g.brinde}: pizza + R$ 100 cada</span></div>
       <div class="note" style="margin-top:6px">${falta}</div>
-      <div class="note" style="border-top:1px solid rgba(255,255,255,.08);padding-top:8px"><b>Observação:</b> a meta do time conta só placa instalada (remoção e remanejo não entram). ${g.pizza} placas: pizza para todos. ${g.brinde} placas: pizza + R$ 100 para cada um.</div></section>`;
+      <div class="note" style="border-top:1px solid rgba(255,255,255,.08);padding-top:8px"><b>Observação:</b> a meta do time soma os pontos de produção de todas as missões do mês, cada missão contada uma vez: módulos instalados, remoção, remanejo, padrão, manutenção e elétrico. Não entram o bônus do Trello nem elogio. ${g.pizza} pontos: pizza para todos. ${g.brinde} pontos: pizza + R$ 100 para cada um.</div></section>`;
   }
   function rankHome(pid, slug) {
     const per = S.periodos[pid]; if (!per) return '';
@@ -323,7 +323,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     return '';
   }
   function topBar(extra) {
-    return `<div class="top"><div class="brand">worksun<span class="dot">.</span><small>Missões</small></div></div>` + (extra || '');
+    return `<div class="top"><div class="brand">worksun<span class="dot">.</span><small>Missões</small></div><a class="regras-btn" href="regras.html">📖 Regras</a></div>` + (extra || '');
   }
   function periodChips() {
     const cur = currentPeriodId();
@@ -497,7 +497,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
       <b>Metas:</b> 2 pessoas 120 / supermeta 145 · 3 pessoas 180 / 200 · 4 pessoas 240 / 270.<br>
       <b>Período:</b> do dia 10 ao dia 10, pela data em que o cartão foi para Missões concluídas. Pagamento no dia 15.<br>
       <b>Capacetes (a partir de dezembro):</b> supermeta em meses seguidos aumenta o bônus do mês. Bronze com 2 meses seguidos (+25%), Prata com 4 (+30%), Ouro com 6 (+35%).<br>
-      <b>Meta do time:</b> somando as placas instaladas por todos no mês, 300 placas dá um dia de pizza paga pela Worksun, e 350 placas dá pizza mais R$ 100 para cada um. Conta só placa instalada.</div></details>
+      <b>Meta do time:</b> somando os pontos de produção das missões do mês (cada missão uma vez, sem o bônus do Trello e sem elogio), 300 pontos dá um dia de pizza paga pela Worksun, e 350 pontos dá pizza mais R$ 100 para cada um.</div></details>
       <p class="note">${when ? 'Atualizado do Trello em ' + esc(when) + '.' : ''} Faltas e férias podem reduzir o valor de forma proporcional no fechamento.</p>`;
   }
 
