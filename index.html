@@ -9,6 +9,7 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#142231">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Missões">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -120,6 +121,13 @@ table.hist td.n, table.hist th.n { text-align: right; }
 .btn { border: 0; border-radius: 8px; padding: 8px 12px; font-size: 13px; font-weight: 600; cursor: pointer; background: var(--lime); color: var(--navy); }
 .btn.saque { display: block; text-align: center; text-decoration: none; padding: 14px; font-size: 16px; border-radius: 12px; }
 .btn.saque:disabled { background: var(--navy); color: var(--muted); border: 1px dashed var(--line); cursor: default; }
+.rk { display: grid; grid-template-columns: 28px 1fr 30% 40px; gap: 8px; align-items: center; font-size: 14px; padding: 6px 4px; border-radius: 8px; }
+.rk.me { background: var(--raised-2); }
+.rk .pos { text-align: center; }
+.rk .bar { height: 6px; background: var(--navy); border-radius: 999px; position: relative; overflow: hidden; }
+.rk .bar i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--lime); border-radius: 999px; }
+.rk b { text-align: right; font-variant-numeric: tabular-nums; }
+.pin { background: var(--navy); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 14px; font-size: 22px; letter-spacing: 6px; text-align: center; width: 100%; }
 .btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
 .picker { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
 .picker .btn { padding: 14px; font-size: 15px; }
@@ -214,10 +222,8 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     }
     const linked = Object.values(S.pessoas).find(p => S.myId && p.uid === S.myId);
     if (linked) return linked.id;
-    const hs = (location.hash || '').replace('#', '');
-    if (hs && S.pessoas[hs] && S.pessoas[hs].ativo !== false && !S.pessoas[hs].uid) { LS.set('ms_eu', hs); return hs; }
-    const saved = LS.get('ms_eu');
-    if (saved && S.pessoas[saved] && !S.pessoas[saved].uid) return saved;
+    const lg = (LS.get('ms_login') || '').split('|');
+    if (lg[0] && S.pessoas[lg[0]] && S.pessoas[lg[0]].ativo !== false && S.pessoas[lg[0]].pinHash && S.pessoas[lg[0]].pinHash === lg[1]) return lg[0];
     return null;
   }
 
@@ -237,6 +243,8 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     let h = topBar(periodChips());
     h += whoBlock(pessoa, c);
     h += heroBlock(pessoa, c, per);
+    h += rankHome(pid, slug);
+    h += installBlock();
     const last = c.rows[c.rows.length - 1];
     if (last && !per.fechado) h += `<div class="toast"><div class="ico">${ICONS[last.tipo] || ICONS.instalacao}</div><div><div class="t1">Última missão concluída</div><div class="t2">${esc(last.cliente)} · ${last.pts >= 0 ? '+' : ''}${last.pts} pts</div></div></div>`;
     const pend = S.pend.filter(p => p.periodo === pid && (p.pessoas || []).includes(slug));
@@ -254,6 +262,23 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     if (tab === 'admin') fillAdminNames();
   }
 
+  function rankHome(pid, slug) {
+    const per = S.periodos[pid]; if (!per) return '';
+    const ids = Object.keys(S.pessoas).filter(s => S.pessoas[s].ativo !== false && ((per.metas && per.metas[s]) || S.hist[pid + '_' + s]));
+    if (!ids.length) return '';
+    const rs = ids.map(s => ({ s, c: calc(pid, s) })).sort((a, b) => b.c.pts - a.c.pts);
+    const max = Math.max(...rs.map(x => x.c.pts), 1); const med = ['🥇', '🥈', '🥉'];
+    return `<section class="card" aria-label="Ranking do time"><div class="row"><h3>Ranking do time · ${esc(per.nome)}</h3><span class="note">pontos</span></div>` + rs.map((x, i) => {
+      const p = S.pessoas[x.s]; const tag = x.c.res === 'supermeta' ? '<span class="pill super">Super</span>' : x.c.res === 'meta' ? '<span class="pill meta">Meta</span>' : '';
+      return `<div class="rk ${x.s === slug ? 'me' : ''}"><span class="pos">${med[i] || (i + 1) + 'º'}</span><span class="nm">${esc(p.nome)} ${tag}</span><span class="bar"><i style="width:${x.c.pts / max * 100}%"></i></span><b>${x.c.pts}</b></div>`;
+    }).join('') + `</section>`;
+  }
+  function installBlock() {
+    if (S.standalone) return '';
+    if (S.installEv) return `<button class="btn saque" id="instalar">Instalar o app no celular</button>`;
+    if (S.isIOS) return `<button class="btn ghost" id="instalar-ios">Instalar o app no iPhone</button>` + (S.iosTip ? `<div class="note">No Safari, toque em <b>Compartilhar</b> (quadrado com seta para cima) e depois em <b>Adicionar à Tela de Início</b>.</div>` : '');
+    return '';
+  }
   function topBar(extra) {
     return `<div class="top"><div class="brand">worksun<span class="dot">.</span><small>Missões</small></div></div>` + (extra || '');
   }
@@ -268,7 +293,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
       sel = `<label class="note" for="ver" style="margin-left:auto">Ver como</label><select id="ver">` +
         Object.values(S.pessoas).filter(x => x.ativo !== false || x.id === p.id).sort((a, b) => (a.ordem || 99) - (b.ordem || 99)).map(x => `<option value="${esc(x.id)}" ${x.id === p.id ? 'selected' : ''}>${esc(x.nome)}</option>`).join('') + `</select>`;
     } else if (!p.uid) {
-      sel = `<button class="btn ghost" id="trocar" style="margin-left:auto">Não sou ${esc(p.nome)}</button>`;
+      sel = `<button class="btn ghost" id="trocar" style="margin-left:auto">Sair</button>`;
     }
     const team = c.m ? c.m.equipe : (p.equipe || '');
     return `<div class="who"><div class="avatar">${esc(initials(p.nome))}</div><div><div class="name">${esc(p.nome)}</div><div class="team">${esc(team)}</div></div>${sel}</div>`;
@@ -380,11 +405,25 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     const ps = await S.user.profiles(els.map(e => e.dataset.uidname));
     els.forEach(e => { const n = ps[e.dataset.uidname] && ps[e.dataset.uidname].name; e.textContent = n ? 'vinculado a ' + n : 'vinculado'; });
   }
-  function renderPicker() {
-    const livres = Object.values(S.pessoas).filter(p => p.ativo !== false && !p.uid).sort((a, b) => (a.ordem || 99) - (b.ordem || 99));
-    app.innerHTML = topBar('') + `<section class="hero"><span class="lbl">Bem-vindo</span><div style="font-size:22px;font-weight:700">Quem é você?</div><div class="sub">Escolha seu nome uma vez. Depois o app abre direto no seu saldo.</div>` +
-      (livres.length ? `<div class="picker">${livres.map(p => `<button class="btn" data-eu="${esc(p.id)}">${esc(p.nome)}</button>`).join('')}</div>` : `<div class="sub">Seu acesso ainda não foi liberado. Peça ao Almir para vincular seu nome.</div>`) + `</section>` + footer();
+  function renderPicker(msg) {
+    const ativos = Object.values(S.pessoas).filter(p => p.ativo !== false).sort((a, b) => (a.ordem || 99) - (b.ordem || 99));
+    const hs = (location.hash || '').replace('#', '');
+    const pre = S.loginSel || (S.pessoas[hs] ? hs : '');
+    app.innerHTML = topBar('') + `<form class="hero" id="login" autocomplete="off"><span class="lbl">Entrar</span><div style="font-size:22px;font-weight:700">Suas missões e seu saldo</div><div class="sub">Escolha seu nome e digite o código de acesso que o Almir te passou. O app guarda o login neste celular.</div>` +
+      `<div class="picker">${ativos.map(p => `<button type="button" class="btn ${p.id === pre ? '' : 'ghost'}" data-sel="${esc(p.id)}" aria-pressed="${p.id === pre}">${esc(p.nome)}</button>`).join('')}</div>` +
+      `<label class="lbl" for="pin">Código de acesso</label><input id="pin" class="pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="6 números" autocomplete="one-time-code">` +
+      `${msg ? `<div class="note" style="color:var(--bad)">${esc(msg)}</div>` : ''}<button class="btn saque" type="submit">Entrar</button></form>` + footer();
   }
+  async function sha(t) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+  app.addEventListener('submit', async ev => {
+    if (ev.target.id !== 'login') return; ev.preventDefault();
+    const slug = S.loginSel || (location.hash || '').replace('#', ''); const pin = (document.getElementById('pin').value || '').replace(/\D/g, '');
+    if (!S.pessoas[slug]) { renderPicker('Escolha o seu nome.'); return; }
+    if (pin.length !== 6) { renderPicker('O código tem 6 números.'); return; }
+    let h; try { h = await sha(slug + ':' + pin); } catch (e) { renderPicker('Este navegador não conseguiu conferir o código. Tente pelo Chrome ou Safari.'); return; }
+    if (h !== S.pessoas[slug].pinHash) { renderPicker('Código errado. Confira com o Almir.'); return; }
+    LS.set('ms_login', slug + '|' + h); try { history.replaceState(null, '', '#' + slug); } catch (e) {} render();
+  });
   function footer() {
     const s = S.sync; const when = s && s.em ? new Date(s.em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : null;
     return `<details class="card"><summary>Como os pontos e o valor são calculados</summary><div class="rules">
@@ -401,9 +440,11 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     const t = ev.target.closest('button'); if (!t) return;
     if (t.dataset.periodo) { S.view.periodo = t.dataset.periodo; render(); return; }
     if (t.dataset.tab) { S.view.tab = t.dataset.tab; LS.set('ms_tab', t.dataset.tab); render(); return; }
-    if (t.dataset.eu) { LS.set('ms_eu', t.dataset.eu); try { history.replaceState(null, '', '#' + t.dataset.eu); } catch (e) {} render(); return; }
+    if (t.dataset.sel) { S.loginSel = t.dataset.sel; const v = (document.getElementById('pin') || {}).value || ''; renderPicker(); const i = document.getElementById('pin'); if (i) { i.value = v; i.focus(); } return; }
     if (t.dataset.copy) { try { await navigator.clipboard.writeText(t.dataset.copy); t.textContent = 'Copiado'; } catch (e) { t.textContent = 'Copie o link ao lado'; } return; }
-    if (t.id === 'trocar') { LS.set('ms_eu', ''); try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} renderPicker(); return; }
+    if (t.id === 'trocar') { LS.set('ms_login', ''); S.loginSel = ''; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} renderPicker(); return; }
+    if (t.id === 'instalar' && S.installEv) { S.installEv.prompt(); try { await S.installEv.userChoice; } catch (e) {} S.installEv = null; render(); return; }
+    if (t.id === 'instalar-ios') { S.iosTip = !S.iosTip; render(); return; }
     if (t.id === 'pago' && S.isOwner) {
       const per = S.periodos[S.view.periodo]; t.disabled = true;
       try { await S.db.doc('periodos/' + per.id).update({ status: per.status === 'pago' ? 'a pagar' : 'pago' }); } catch (e) { t.textContent = 'Não foi possível salvar'; }
@@ -433,6 +474,10 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
   }
 
   window.addEventListener('hashchange', () => render());
+  S.standalone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
+  S.isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) && !/claude/i.test(location.hostname);
+  window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); S.installEv = e; render(); });
+  if ('serviceWorker' in navigator && !/claude/i.test(location.hostname)) { try { navigator.serviceWorker.register('sw.js').catch(() => {}); } catch (e) {} }
   (async function init() {
     fetch('dados.json', { cache: 'no-store' }).then(r => r.ok ? r.json() : null).then(d => {
       if (!d || S.db) return;
