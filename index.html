@@ -513,14 +513,12 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     const perdido = localSo && S.saquesOk && (Date.now() - new Date(local.em).getTime()) > 15 * 60000;
     const pendente = (sq && sq.status === 'pendente') ? sq : (localSo && !perdido) ? local : null;
     if (pendente) {
-      const reabrir = saqueMsg(p, per, c, pendente.id);
-      return `<button class="btn saque" disabled>Solicitação em análise</button><div class="saq-st">Pedido <b>${esc(pendente.id)}</b> de ${brl(c.valor)} registrado${sq && sq.status === 'pendente' ? '' : ' (confirmando no sistema)'}. O botão fica bloqueado em todos os celulares até o Almir marcar como pago ou rejeitar.</div><button class="linkbtn" id="reabrir" data-msg="${esc(reabrir)}">Não enviou a mensagem? Reabrir conversa no WhatsApp</button>`;
+      return `<button class="btn saque" disabled>Solicitação em análise</button><div class="saq-st">Pedido <b>${esc(pendente.id)}</b> de ${brl(c.valor)} enviado para o escritório${sq && sq.status === 'pendente' ? '' : ' (confirmando no sistema)'}. O botão fica bloqueado até o Almir marcar como pago ou rejeitar. Não precisa mandar mensagem.</div>`;
     }
     let aviso = '';
     if (sq && sq.status === 'rejeitado') aviso = `<div class="saq-st bad">Pedido <b>${esc(sq.id)}</b> foi rejeitado${sq.motivo ? ': ' + esc(sq.motivo) : '.'} Você pode pedir de novo.</div>`;
     if (perdido) aviso += `<div class="saq-st bad">O pedido <b>${esc(local.id)}</b> não chegou ao sistema. Peça de novo.</div>`;
-    if (S.saquesOk === false) aviso += `<div class="note">Sem conexão com o registro de saques agora. Tente de novo em instantes.</div>`;
-    return aviso + `<button class="btn saque" id="sacar" data-per="${esc(per.id)}" ${S.saquesOk === false ? 'disabled' : ''}>Solicitar saque · ${brl(c.valor)}</button><div class="note">${esc(p.nome)}, o pedido fica registrado no sistema e depois abre o WhatsApp com a mensagem pronta para o Almir. Pagamento previsto em ${dmy(per.pagamento)}.</div>`;
+    return aviso + `<button class="btn saque" id="sacar" data-per="${esc(per.id)}">Solicitar saque · ${brl(c.valor)}</button><div class="note">${esc(p.nome)}, o pedido vai direto para o escritório, com aviso por e-mail. Não precisa mandar mensagem. Pagamento previsto em ${dmy(per.pagamento)}.</div>`;
   }
   function missoesBlock(c) {
     if (c.fromHist && !c.rows.length) return `<div class="empty">Este período foi fechado antes do app. Só o total de pontos foi registrado.</div>`;
@@ -653,14 +651,11 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
       if (t.disabled) return; t.disabled = true; t.textContent = 'Registrando pedido…';
       const slug = S.view.pessoa; const per = S.periodos[t.dataset.per]; const p = S.pessoas[slug]; const c = calc(per.id, slug);
       const id = per.id.slice(2).replace('-', '') + '-' + slug.toUpperCase() + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
-      const win = window.open('', '_blank');
       try {
         const body = new URLSearchParams(); body.set(SAQUE_ENTRY, [id, slug, per.id, (Math.round(c.valor * 100) / 100).toFixed(2), c.pts, p.nome].join('|'));
         await fetch(SAQUE_FORM, { method: 'POST', mode: 'no-cors', body });
-      } catch (e) { if (win) win.close(); t.disabled = false; t.textContent = 'Sem internet. Toque de novo para pedir'; return; }
+      } catch (e) { t.disabled = false; t.textContent = 'Sem internet. Toque de novo para pedir'; return; }
       LS.set('ms_saque2_' + per.id + '_' + slug, JSON.stringify({ id, em: new Date().toISOString() }));
-      const url = 'https://wa.me/?text=' + encodeURIComponent(saqueMsg(p, per, c, id));
-      if (win) win.location.href = url; else location.href = url;
       render(); setTimeout(loadSaques, 4000); return;
     }
     if (t.id === 'reabrir') { const url = 'https://wa.me/?text=' + encodeURIComponent(t.dataset.msg); const w = window.open(url, '_blank'); if (!w) location.href = url; return; }
