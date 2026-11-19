@@ -162,6 +162,8 @@ table.hist td.n, table.hist th.n { text-align: right; }
 .saq-st b { color: var(--lime); }
 .saq-st.bad b { color: var(--bad); }
 .linkbtn { background: transparent; border: 0; color: var(--lime); font: inherit; font-size: 13px; text-decoration: underline; padding: 0; cursor: pointer; text-align: left; }
+.pot { background: rgba(184,225,78,.08); border: 1px dashed var(--lime); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; }
+.pot .pv { font-size: 26px; font-weight: 800; color: var(--lime); font-variant-numeric: tabular-nums; }
 .rk { display: grid; grid-template-columns: 28px 1fr 30% 40px; gap: 8px; align-items: center; font-size: 14px; padding: 6px 4px; border-radius: 8px; }
 .rk.me { background: var(--raised-2); }
 .rk .pos { text-align: center; }
@@ -463,11 +465,10 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
         else if (c.pts < m.super) nx = `Cada ponto agora vale <b>+${brl(1)}</b>. Faltam <b>${m.super - c.pts} pts</b> para a supermeta, que conta para o capacete.`;
         else nx = `Supermeta garantida. Cada ponto a mais vale <b>+${brl(1)}</b>.`;
         h += `<div class="next">${nx}</div>`;
-        const ruins = c.rows.filter(r => r.trello === -6).length;
-        if (ruins) {
-          const potPts = c.pts + ruins * 9; const potV = potPts >= m.meta ? m.fixo + (potPts - m.meta) : 0;
-          h += `<div class="next">Completando o Trello de ${ruins} ${ruins === 1 ? 'cartão' : 'cartões'} você ganha <b>+${ruins * 9} pts</b>${potV > c.valor ? ` e o valor sobe para <b>${brl(potV)}</b>` : `, ficando a ${Math.max(0, m.meta - potPts)} pts da meta`}. Veja em <b>Missões</b>, embaixo.</div>`;
-        }
+      }
+      if (!(per.status === 'pago') && (!per.fechado || (per.prazoCorrecao && today() <= per.prazoCorrecao))) {
+        const pt = potencial(per.id, p.id, c);
+        if (pt && pt.n) h += `<div class="pot"><div class="row"><span class="lbl">Valor total se resolver as pendências</span><span class="pill meta">${pt.n} ${pt.n === 1 ? 'cartão' : 'cartões'}</span></div><div class="pv">${brl(pt.valor)}</div><div class="note">Hoje: ${brl(pt.hoje)} · resolvendo: <b>+${brl(Math.max(0, pt.valor - pt.hoje))}</b> e <b>+${String(Math.round((pt.pts - c.pts) * 10) / 10).replace('.', ',')} pts</b>${pt.pts < m.meta ? ` (ficaria a ${String(Math.round((m.meta - pt.pts) * 10) / 10).replace('.', ',')} pts da meta)` : pt.res === 'supermeta' && c.res !== 'supermeta' ? ' · e bate a supermeta' : ''}. Veja o que falta em <b>Missões</b>.</div></div>`;
       }
       if (c.valor != null) h += saqueBlock(p, c, per);
     } else if (c.fromHist) {
@@ -525,6 +526,22 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     if (perdido) aviso += `<div class="saq-st bad">O pedido <b>${esc(local.id)}</b> não está mais no registro de saques (foi cancelado ou não chegou). Se ainda quiser receber, peça de novo.</div>`;
     if (S.isAdmin || S.isOwner) return aviso + `<button class="btn saque" disabled>Solicitar saque · ${brl(c.valor)}</button><div class="note">Visão de admin: só o próprio ${esc(p.nome)} pode pedir o saque pelo celular dele.</div>`;
     return aviso + `<button class="btn saque" id="sacar" data-per="${esc(per.id)}">Solicitar saque · ${brl(c.valor)}</button><div class="note">${esc(p.nome)}, o pedido vai direto para o escritório, com aviso por e-mail. Não precisa mandar mensagem. Pagamento previsto em ${dmy(per.pagamento)}.</div>`;
+  }
+  function potencial(pid, slug, c) {
+    const ids = new Set(S.pend.filter(p => p.periodo === pid && (p.pessoas || []).includes(slug)).map(p => p.id));
+    let n = 0;
+    const orig = S.missoes;
+    const sim = orig.map(m => {
+      if (!ids.has(m.id) || m.periodo !== pid) return m;
+      if (m.semFoto) { const prod = parseInt(m.valeComFoto, 10); if (!prod) return m; n++; return Object.assign({}, m, { pts: prod + 3, trello: 3, semFoto: false }); }
+      if (m.trello === -6) { n++; return Object.assign({}, m, { pts: m.pts + 9, trello: 3 }); }
+      return m;
+    });
+    if (!n) return null;
+    S.missoes = sim; let c2;
+    try { c2 = calc(pid, slug); } finally { S.missoes = orig; }
+    const fechado = S.periodos[pid] && S.periodos[pid].fechado;
+    return { n, pts: c2.pts, res: c2.res, valor: fechado ? (c2.valor || 0) : c2.acum, hoje: fechado ? (c.valor || 0) : c.acum };
   }
   function missoesBlock(c) {
     if (c.fromHist && !c.rows.length) return `<div class="empty">Este período foi fechado antes do app. Só o total de pontos foi registrado.</div>`;
