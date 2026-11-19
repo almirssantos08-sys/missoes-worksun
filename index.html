@@ -385,7 +385,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     const max = Math.max(...rs.map(x => x.c.pts), 1); const med = ['🥇', '🥈', '🥉'];
     return `<section class="card" aria-label="Ranking do time"><div class="row"><h3>Ranking do time · ${esc(per.nome)}</h3><span class="note">pontos</span></div>` + rs.map((x, i) => {
       const p = S.pessoas[x.s]; const tag = x.c.res === 'supermeta' ? '<span class="pill super">Super</span>' : x.c.res === 'meta' ? '<span class="pill meta">Meta</span>' : '';
-      return `<div class="rk ${x.s === slug ? 'me' : ''}"><span class="pos">${med[i] || (i + 1) + 'º'}</span><span class="nm">${(t => BONECO(t ? t[3] : '#8A97A3', 22))(tierOf(streak(x.s)))}${esc(p.nome)} ${tag}</span><span class="bar"><i style="width:${x.c.pts / max * 100}%"></i></span><b>${x.c.pts}</b></div>`;
+      return `<div class="rk ${x.s === slug ? 'me' : ''}"><span class="pos">${(k => med[k - 1] || k + 'º')(rs.filter(y => y.c.pts > x.c.pts).length + 1)}</span><span class="nm">${(t => BONECO(t ? t[3] : '#8A97A3', 22))(tierOf(streak(x.s)))}${esc(p.nome)} ${tag}</span><span class="bar"><i style="width:${x.c.pts / max * 100}%"></i></span><b>${x.c.pts}</b></div>`;
     }).join('') + `</section>`;
   }
   function installBlock() {
@@ -395,7 +395,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     return '';
   }
   function topBar(extra) {
-    return `<div class="top"><div class="brand">worksun<span class="dot">.</span><small>Missões</small></div><a class="regras-btn" href="regras.html">📖 Regras</a></div>` + (extra || '');
+    return `<div class="top"><div class="brand">worksun<span class="dot">.</span><small>Missões</small></div></div>` + (extra || '');
   }
   function periodChips() {
     const cur = currentPeriodId();
@@ -451,7 +451,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
         const ruins = c.rows.filter(r => r.trello === -6).length;
         if (ruins) {
           const potPts = c.pts + ruins * 9; const potV = potPts >= m.meta ? m.fixo + (potPts - m.meta) : 0;
-          h += `<div class="next">Completando o Trello de ${ruins} ${ruins === 1 ? 'cartão' : 'cartões'} você ganha <b>+${ruins * 9} pts</b>${potV > c.valor ? ` e o valor sobe para <b>${brl(potV)}</b>` : `, ficando a ${Math.max(0, m.meta - potPts)} pts da meta`}. Veja a aba Pendências.</div>`;
+          h += `<div class="next">Completando o Trello de ${ruins} ${ruins === 1 ? 'cartão' : 'cartões'} você ganha <b>+${ruins * 9} pts</b>${potV > c.valor ? ` e o valor sobe para <b>${brl(potV)}</b>` : `, ficando a ${Math.max(0, m.meta - potPts)} pts da meta`}. Veja em <b>Missões</b>, embaixo.</div>`;
         }
       }
       if (c.valor != null) h += saqueBlock(p, c, per);
