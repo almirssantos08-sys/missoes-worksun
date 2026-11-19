@@ -228,7 +228,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     for (; i >= 0; i--) { const c = calc(ps[i].id, slug, true); if (c.res === 'supermeta') n++; else break; }
     return n;
   }
-  function calc(pid, slug, base) {
+  function calc(pid, slug, base, semMedia) {
     const per = S.periodos[pid]; const m = per && per.metas ? per.metas[slug] : null;
     const pp = per && per.modo === 'equipe' && m ? 3 / (m.tam || 3) : 1;
     const ms = S.missoes.filter(x => x.periodo === pid && (x.pessoas || []).includes(slug))
@@ -248,7 +248,8 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     });
     const h = S.hist[pid + '_' + slug];
     const fromHist = !!h && (!ms.length || h.oficial);
-    const pts = fromHist ? (h.pts || 0) : cum;
+    let pts = fromHist ? (h.pts || 0) : cum; let media = null;
+    if (!fromHist && m && m.mediaCom && !semMedia) { const o = calc(pid, m.mediaCom, true, true); media = { proprio: cum, outro: o.pts, nomeOutro: m.mediaCom }; pts = Math.round((cum + o.pts) / 2 * 100) / 100; }
     let valor = 0, res = 'abaixo';
     if (fromHist) { valor = h.valor == null ? null : h.valor; res = h.resultado || 'abaixo'; }
     else if (m) { valor = pts >= m.meta ? Math.round((m.fixo + (pts - m.meta) * pp) * 100) / 100 : 0; res = pts >= m.super ? 'supermeta' : pts >= m.meta ? 'meta' : 'abaixo'; }
@@ -259,7 +260,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
       const n = streakAt(pid, slug); const t = n >= 6 ? ['Ouro', 0.35] : n >= 4 ? ['Prata', 0.30] : n >= 2 ? ['Bronze', 0.25] : null;
       if (t) { const extra = Math.round(m.fixo * t[1] * 100) / 100; cap = { nome: t[0], pct: t[1], extra, meses: n }; valor += extra; acum += extra; }
     }
-    return { m, rows, pts, valor, acum, cap, res, servicos, fromHist, hist: h || null, per, pp, pct: m ? pts / m.meta : 0 };
+    return { m, rows, pts, valor, acum, cap, res, servicos, fromHist, hist: h || null, per, pp, media, pct: m ? pts / m.meta : 0 };
   }
 
   function streak(slug) {
@@ -459,7 +460,8 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
       const max = Math.max(m.super * 1.25, c.pts * 1.05, 1);
       const pct = v => Math.max(0, Math.min(100, v / max * 100));
       h += `<div class="track" aria-label="${c.pts} pontos de ${m.meta} da meta"><div class="fill" style="width:${pct(c.pts)}%"></div><span class="mark" style="left:${pct(m.meta)}%">Meta ${m.meta}</span><span class="mark below" style="left:${pct(m.super)}%">Super ${m.super}</span></div>`;
-      h += `<div class="stats"><div class="stat"><b>${String(c.pts).replace('.', ',')}</b><span>pontos · ${Math.round(c.pct * 100)}% da meta</span></div><div class="stat"><b>${c.servicos == null ? '–' : c.servicos}</b><span>missões</span></div><div class="stat"><b>${String(Math.round(Math.abs(c.pts - m.meta) * 10) / 10).replace('.', ',').replace(/^/, c.pts >= m.meta ? '+' : '')}</b><span>${c.pts >= m.meta ? 'acima da meta' : 'faltam p/ meta'}</span></div></div>`;
+      h += `<div class="stats"><div class="stat"><b>${String(c.pts).replace('.', ',')}</b><span>pontos${c.media ? ' (média da dupla)' : ''} · ${Math.round(c.pct * 100)}% da meta</span></div><div class="stat"><b>${c.servicos == null ? '–' : c.servicos}</b><span>missões</span></div><div class="stat"><b>${String(Math.round(Math.abs(c.pts - m.meta) * 10) / 10).replace('.', ',').replace(/^/, c.pts >= m.meta ? '+' : '')}</b><span>${c.pts >= m.meta ? 'acima da meta' : 'faltam p/ meta'}</span></div></div>`;
+      if (c.media) { const f = v => String(Math.round(v * 10) / 10).replace('.', ','); const on = (S.pessoas[c.media.nomeOutro] || {}).nome || c.media.nomeOutro; h += `<div class="next">🤝 A dupla recebe igual: seus pontos (${f(c.media.proprio)}) + pontos de ${esc(on)} (${f(c.media.outro)}) ÷ 2 = <b>${f(c.pts)} pts</b> para cada um.</div>`; }
       if (!per.fechado) {
         let nx;
         if (c.pts < m.meta) nx = `Cada ponto vale <b>${brl(m.fixo / m.meta)}</b> até a meta e <b>${brl(c.pp)}</b> depois dela. Na meta, o acumulado vira <b>${brl(m.fixo)}</b>.`;
@@ -529,7 +531,8 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     return aviso + `<button class="btn saque" id="sacar" data-per="${esc(per.id)}">Solicitar saque · ${brl(c.valor)}</button><div class="note">${esc(p.nome)}, o pedido vai direto para o escritório, com aviso por e-mail. Não precisa mandar mensagem. Pagamento previsto em ${dmy(per.pagamento)}.</div>`;
   }
   function potencial(pid, slug, c) {
-    const ids = new Set(S.pend.filter(p => p.periodo === pid && (p.pessoas || []).includes(slug)).map(p => p.id));
+    const mm = S.periodos[pid] && S.periodos[pid].metas && S.periodos[pid].metas[slug]; const quem = [slug].concat(mm && mm.mediaCom ? [mm.mediaCom] : []);
+    const ids = new Set(S.pend.filter(p => p.periodo === pid && (p.pessoas || []).some(q => quem.includes(q))).map(p => p.id));
     let n = 0;
     const orig = S.missoes;
     const sim = orig.map(m => {
