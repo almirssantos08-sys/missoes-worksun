@@ -244,8 +244,7 @@
      "fixo": 160,
      "meta": 120,
      "super": 133,
-     "tam": 2,
-     "mediaCom": "john"
+     "tam": 2
     },
     "italo": {
      "equipe": "Sem equipe no período",
@@ -258,8 +257,7 @@
      "fixo": 160,
      "meta": 120,
      "super": 133,
-     "tam": 2,
-     "mediaCom": "edson"
+     "tam": 2
     },
     "naldo": {
      "equipe": "Equipe 01",
@@ -310,16 +308,14 @@
      "fixo": 160,
      "meta": 120,
      "super": 133,
-     "tam": 2,
-     "mediaCom": "john"
+     "tam": 2
     },
     "john": {
      "equipe": "Dupla John e Edson",
      "fixo": 160,
      "meta": 120,
      "super": 133,
-     "tam": 2,
-     "mediaCom": "edson"
+     "tam": 2
     },
     "naldo": {
      "equipe": "Equipe 01",
