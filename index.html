@@ -236,8 +236,8 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     let cum = 0;
     const rows = ms.map(x => {
       let pts, fator = 1; const ex = Number(x.extra && x.extra[slug]) || 0;
-      if (per && (per.equivalente || per.modo === 'equipe')) { const n = (x.pessoas || []).length || 1; const t = Number(x.trello) || 0; fator = (per.modo === 'equipe' ? ((m && m.tam) || 3) : 3) / n; pts = Math.round(((Number(x.pts) || 0) - t) * fator * 10) / 10 + t + ex; }
-      else pts = (Number(x.ptsPorPessoa && x.ptsPorPessoa[slug] != null ? x.ptsPorPessoa[slug] : x.pts) || 0) + ex;
+      if (per && (per.equivalente || per.modo === 'equipe')) { const n = (x.pessoas || []).length || 1; const t = Number(x.trello) || 0; fator = (per.modo === 'equipe' ? ((m && m.tam) || 3) : 3) / n; pts = Math.round(((Number(x.pts) || 0) - t) * fator * (x.sabado ? 2 : 1) * 10) / 10 + t + ex; }
+      else pts = (Number(x.ptsPorPessoa && x.ptsPorPessoa[slug] != null ? x.ptsPorPessoa[slug] : x.pts) || 0) + ex + (x.sabado ? (Number(x.pts) || 0) - (Number(x.trello) || 0) : 0);
       const before = cum; cum = Math.round((cum + pts) * 10) / 10; let ef = { kind: 'none' };
       if (m) {
         if (before < m.meta && cum >= m.meta) ef = { kind: 'meta', v: m.fixo + (cum - m.meta) * pp };
@@ -557,6 +557,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
       if (r.semFoto) tags.push(`<span class="tag no">Sem fotos: 0 pts até colocar (vale ${esc(r.valeComFoto)})</span>`);
       if (r.fator && r.fator !== 1) tags.push(`<span class="tag">${(r.pessoas || []).length} pessoas · ×${String(Math.round(r.fator * 100) / 100).replace('.', ',')}</span>`);
       if (r.ex) tags.push(`<span class="tag ok">Checklist exemplar +${r.ex}</span>`);
+      if (r.sabado) tags.push('<span class="tag ok">Sábado: pontos em dobro</span>');
       (r.extras || []).forEach(t => tags.push(`<span class="tag">${esc(t)}</span>`));
       let e = '';
       if (r.ef.kind === 'meta') e = `<div class="e meta">Meta batida · ${brl(r.ef.v)}</div>`;
@@ -657,6 +658,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     return `<details class="card"><summary>Como os pontos e o valor são calculados</summary><div class="rules">
       <b>Pontos por missão:</b> +1 por módulo (ou placa removida/remanejada), +5 padrão de entrada, +7 manutenção, +7 serviço elétrico de dia todo, +3 de meio-dia, +4 elogio do cliente.<br>
       <b>Trello:</b> cartão completo (checklist e fotos) +3; sem foto ou com item de checklist sem marcar −6 para toda a equipe. O checklist Comissionamento não conta.<br>
+      <b>Sábado:</b> serviço feito no sábado vale pontos em dobro.<br>
       <b>Metas:</b> dupla 120 (supermeta 133), trio 180 (supermeta 200). Obra com mais gente que a sua equipe: pontos × tamanho da equipe ÷ pessoas na obra.<br>
       <b>Valor:</b> bateu a meta, ganha R$ 160 (dupla e trio). Cada ponto acima da meta vale R$ 1,00 no trio e R$ 1,50 na dupla. Até a meta, o valor vai acumulando a cada ponto e libera quando a meta é batida.<br>
       <b>Metas:</b> 2 pessoas 120 / supermeta 145 · 3 pessoas 180 / 200 · 4 pessoas 240 / 270.<br>
