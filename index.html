@@ -3,13 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Missões Worksun</title>
+<title>Corrida do Sol · Worksun</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="theme-color" content="#142231">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Missões">
+<meta name="apple-mobile-web-app-title" content="Corrida do Sol">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -184,7 +184,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
 </head>
 <body>
 <main class="wrap" id="app">
-  <div class="top"><div class="brand">worksun<span class="dot">.</span><small>Missões</small></div></div>
+  <div class="top"><div class="brand">worksun<span class="dot">.</span><small>Corrida do Sol</small></div></div>
   <div class="empty" id="boot">Carregando suas missões…</div>
 </main>
 <script>
@@ -409,7 +409,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     return '';
   }
   function topBar(extra) {
-    return `<div class="top"><div class="brand">worksun<span class="dot">.</span><small>Missões</small></div></div>` + (extra || '');
+    return `<div class="top"><div class="brand">worksun<span class="dot">.</span><small>Corrida do Sol</small></div></div>` + (extra || '');
   }
   function periodChips() {
     const cur = currentPeriodId();
@@ -504,7 +504,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     } catch (e) { S.saquesOk = false; }
     render();
   }
-  function saqueMsg(p, per, c, id) { return `Olá Almir! Aqui é ${p.nome}. Pedido de saque ${id}: bônus de ${per.nome} (${dmy(per.inicio)} a ${dmy(per.fim)}), ${brl(c.valor)} (${c.pts} pontos). Enviado pelo app Missões Worksun.`; }
+  function saqueMsg(p, per, c, id) { return `Olá Almir! Aqui é ${p.nome}. Pedido de saque ${id}: bônus de ${per.nome} (${dmy(per.inicio)} a ${dmy(per.fim)}), ${brl(c.valor)} (${c.pts} pontos). Enviado pelo app Corrida do Sol.`; }
   function saqueBlock(p, c, per) {
     if (per.status === 'pago') return '';
     const libera = per.prazoCorrecao && per.prazoCorrecao >= per.fim ? per.prazoCorrecao : per.fim;
