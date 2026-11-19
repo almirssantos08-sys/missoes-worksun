@@ -90,7 +90,7 @@ button, select, input { font-family: inherit; }
 .tag.wa { color: var(--warn); }
 .right { text-align: right; }
 .right .p { font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.right .p.neg { color: var(--bad); }
+.right .p.neg, .toast b.neg { color: var(--bad); }
 .right .e { font-size: 12px; color: var(--muted); margin-top: 2px; white-space: nowrap; }
 .right .e.rs { color: var(--lime); font-weight: 600; }
 .right .e.meta { color: var(--navy); background: var(--lime); border-radius: 6px; padding: 1px 6px; font-weight: 700; }
@@ -131,6 +131,37 @@ table.hist td.n, table.hist th.n { text-align: right; }
 .card.boneco-card .boneco { flex: none; width: 96px; height: 96px; }
 .rk .nm .boneco { vertical-align: -6px; margin-right: 6px; }
 .top .regras-btn { margin-left: auto; color: var(--lime); border: 1px solid var(--lime); border-radius: 999px; padding: 5px 12px; font-size: 13px; font-weight: 600; text-decoration: none; }
+
+.wrap { padding-bottom: 96px !important; }
+.navbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: rgba(20,34,49,.97); border-top: 1px solid var(--line); display: flex; justify-content: center; padding: 6px 8px calc(6px + env(safe-area-inset-bottom)); backdrop-filter: blur(6px); }
+.navbar .in { display: flex; width: 100%; max-width: 620px; gap: 4px; }
+.navbar button, .navbar a { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px; background: transparent; border: 0; color: var(--muted); font: inherit; font-size: 11.5px; font-weight: 600; padding: 6px 2px; border-radius: 10px; text-decoration: none; cursor: pointer; position: relative; min-height: 48px; }
+.navbar svg { width: 22px; height: 22px; }
+.navbar [aria-current="page"] { color: var(--lime); background: rgba(184,225,78,.08); }
+.navbar .n { position: absolute; top: 2px; right: calc(50% - 20px); min-width: 16px; padding: 0 4px; border-radius: 8px; background: var(--warn); color: var(--navy); font-size: 10px; line-height: 16px; }
+.hello { display: flex; align-items: center; gap: 12px; }
+.hello h1 { margin: 0; font-size: 22px; }
+.hello .note { margin: 0; }
+.hello .btn { margin-left: auto; }
+.tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.tile { background: var(--raised); border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; border: 0; color: var(--ink); text-align: left; font: inherit; cursor: pointer; }
+.tile .k { font-size: 11.5px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+.tile .v { font-size: 26px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.tile .v small { font-size: 14px; color: var(--muted); font-weight: 500; }
+.tile .s { font-size: 12.5px; color: var(--muted); }
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.steps .st { background: var(--navy); border-radius: 10px; padding: 8px 10px; font-size: 12px; color: var(--muted); border: 1px solid transparent; }
+.steps .st b { display: block; font-size: 13px; color: var(--muted); }
+.steps .st.done b { color: var(--good); }
+.steps .st.on { border-color: var(--lime); }
+.steps .st.on b { color: var(--lime); }
+.comp { font-size: 13px; color: var(--muted); }
+.stale { background: rgba(242,181,68,.14); color: var(--warn); border-radius: 12px; padding: 10px 12px; font-size: 13.5px; }
+.syncok { font-size: 12px; color: var(--muted); }
+.saq-st { font-size: 13.5px; background: var(--navy); border-radius: 10px; padding: 10px 12px; }
+.saq-st b { color: var(--lime); }
+.saq-st.bad b { color: var(--bad); }
+.linkbtn { background: transparent; border: 0; color: var(--lime); font: inherit; font-size: 13px; text-decoration: underline; padding: 0; cursor: pointer; text-align: left; }
 .rk { display: grid; grid-template-columns: 28px 1fr 30% 40px; gap: 8px; align-items: center; font-size: 14px; padding: 6px 4px; border-radius: 8px; }
 .rk.me { background: var(--raised-2); }
 .rk .pos { text-align: center; }
@@ -160,9 +191,9 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
 (function () {
   const app = document.getElementById('app');
   const S = { db: null, user: null, myId: null, isOwner: false, pessoas: {}, periodos: {}, missoes: [], hist: {}, pend: [], sync: null, got: {}, timedOut: false,
-    view: { periodo: null, pessoa: null, tab: 'missoes' }, adminQ: {}, adminHits: {} };
+    view: { periodo: null, pessoa: null, tab: 'inicio' }, adminQ: {}, adminHits: {}, saques: {}, saquesOk: null };
   const LS = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
-  S.view.tab = LS.get('ms_tab') || 'missoes';
+  S.view.tab = ['inicio', 'missoes', 'ranking'].includes(LS.get('ms_tab2')) ? LS.get('ms_tab2') : 'inicio';
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const brl = v => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -249,6 +280,39 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     return null;
   }
 
+  const NAV_IC = {
+    inicio: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/></svg>',
+    missoes: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/></svg>',
+    ranking: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 20V12M10 20V6M16 20v-9M22 20H2"/></svg>',
+    regras: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 21V5M8 7h7"/></svg>',
+    admin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/></svg>'
+  };
+  function navBar(tab, nPend) {
+    const it = [['inicio', 'Início'], ['missoes', 'Missões'], ['ranking', 'Ranking']].concat(S.isOwner ? [['admin', 'Admin']] : []);
+    return `<nav class="navbar" aria-label="Navegação"><div class="in">` + it.map(([k, l]) =>
+      `<button data-tab="${k}" ${tab === k ? 'aria-current="page"' : ''}>${NAV_IC[k]}${l}${k === 'missoes' && nPend ? `<span class="n">${nPend}</span>` : ''}</button>`).join('') +
+      `<a href="regras.html">${NAV_IC.regras}Regras</a></div></nav>`;
+  }
+  function syncInfo() {
+    const s = S.sync; if (!s || !s.em) return { when: null, stale: false };
+    const d = new Date(s.em); const h = (Date.now() - d.getTime()) / 36e5;
+    const now = new Date(); const dia = now.getDay(); const hr = now.getHours();
+    const horario = dia >= 1 && dia <= 6 && hr >= 9 && hr <= 21;
+    return { when: d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }), stale: (horario && h > 3) || h > 30, horas: Math.floor(h) };
+  }
+  function staleBlock() {
+    const si = syncInfo();
+    if (!si.when) return '';
+    if (si.stale) return `<div class="stale" role="status">⚠️ Os dados podem estar desatualizados: a última atualização do Trello foi em <b>${esc(si.when)}</b> (há ${si.horas} h). Missões concluídas depois disso ainda não aparecem.</div>`;
+    return `<div class="syncok">Atualizado do Trello em ${esc(si.when)}</div>`;
+  }
+  function rankPos(pid, slug) {
+    const per = S.periodos[pid]; if (!per) return null;
+    const ids = Object.keys(S.pessoas).filter(s => S.pessoas[s].ativo !== false && ((per.metas && per.metas[s]) || S.hist[pid + '_' + s]));
+    const rs = ids.map(s => ({ s, p: calc(pid, s).pts })).sort((a, b) => b.p - a.p || (S.pessoas[a.s].nome < S.pessoas[b.s].nome ? -1 : 1));
+    const me = rs.find(x => x.s === slug); if (!me) return null;
+    return { pos: rs.filter(x => x.p > me.p).length + 1, de: rs.length, empate: rs.filter(x => x.p === me.p).length > 1 };
+  }
   function render() {
     if (!S.db && !S.json) return;
     const ready = S.got.pessoas && S.got.periodos && S.got.missoes;
@@ -262,29 +326,37 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     if (!slug) { renderPicker(); return; }
     const pid = S.view.periodo; const per = S.periodos[pid]; const pessoa = S.pessoas[slug];
     const c = calc(pid, slug);
-    let h = topBar(periodChips());
-    h += whoBlock(pessoa, c);
-    h += heroBlock(pessoa, c, per);
-    h += globalBlock(pid);
-    h += rankHome(pid, slug);
-    h += installBlock();
-    const last = c.rows[c.rows.length - 1];
-    if (last && !per.fechado) h += `<div class="toast"><div class="ico">${ICONS[last.tipo] || ICONS.instalacao}</div><div><div class="t1">Última missão concluída</div><div class="t2">${esc(last.cliente)} · ${last.pts >= 0 ? '+' : ''}${last.pts} pts</div></div></div>`;
     const pend = S.pend.filter(p => p.periodo === pid && (p.pessoas || []).includes(slug));
-    h += `<div class="tabs" role="tablist">` + [['missoes', 'Missões'], ['ranking', 'Ranking'], ['pendencias', 'Pendências' + (pend.length ? `<span class="n">${pend.length}</span>` : '')], ['capacetes', 'Capacetes']]
-      .concat(S.isOwner ? [['admin', 'Admin']] : [])
-      .map(([k, l]) => `<button class="tab" role="tab" id="tab-${k}" data-tab="${k}" aria-selected="${S.view.tab === k}">${l}</button>`).join('') + `</div>`;
-    const tab = S.view.tab === 'admin' && !S.isOwner ? 'missoes' : S.view.tab;
-    if (tab === 'missoes') h += missoesBlock(c);
-    if (tab === 'ranking') h += rankingBlock(pid, slug);
-    if (tab === 'pendencias') h += pendBlock(pend);
-    if (tab === 'capacetes') h += capacetesBlock(slug);
+    const tab = S.view.tab === 'admin' && !S.isOwner ? 'inicio' : S.view.tab;
+    let h = topBar(periodChips());
+    h += helloBlock(pessoa, c, per);
+    h += staleBlock();
+    if (tab === 'inicio') {
+      h += heroBlock(pessoa, c, per);
+      const rp = rankPos(pid, slug); const g = Object.assign({ pizza: 300, brinde: 350 }, per.metaGlobal || {});
+      h += `<div class="tiles"><button class="tile" data-tab="ranking"><span class="k">Ranking</span><span class="v">${rp ? rp.pos + 'º' : '–'} <small>${rp ? 'de ' + rp.de : ''}</small></span><span class="s">${rp && rp.empate ? 'empatado · ' : ''}individual, por pontos</span></button>` +
+        `<button class="tile" data-tab="missoes"><span class="k">Pendências</span><span class="v">${pend.length}</span><span class="s">${pend.length ? 'cartões para completar' : 'tudo certo no Trello'}</span></button></div>`;
+      h += globalBlock(pid);
+      const last = c.rows[c.rows.length - 1];
+      if (last) h += `<div class="toast"><div class="ico">${ICONS[last.tipo] || ICONS.instalacao}</div><div style="flex:1"><div class="t1">Última missão</div><div class="t2">${esc(last.cliente)}</div><div class="note">${esc(TIPO[last.tipo] || last.tipo)}${last.detalhe && last.detalhe !== (TIPO[last.tipo] || '') ? ' · ' + esc(last.detalhe) : ''}</div></div><b class="${last.pts < 0 ? 'neg' : ''}">${last.pts >= 0 ? '+' : ''}${last.pts} pts</b></div>`;
+      h += `<button class="btn ghost" data-tab="missoes">Ver minhas missões</button>`;
+      h += installBlock();
+    }
+    if (tab === 'missoes') { if (pend.length) h += `<h3 style="margin:0">Pendências no Trello</h3>` + pendBlock(pend) + `<h3 style="margin:0">Missões do mês</h3>`; h += missoesBlock(c); }
+    if (tab === 'ranking') { h += rankHome(pid, slug); h += `<p class="note">Desempate: quem tem os mesmos pontos fica na mesma posição. O valor em reais de cada um aparece só para a própria pessoa.</p>`; h += `<h3 style="margin:0">Seu capacete</h3>` + capacetesBlock(slug); }
     if (tab === 'admin') h += adminBlock(pid);
     h += footer();
+    h += navBar(tab, pend.length);
     app.innerHTML = h;
     if (tab === 'admin') fillAdminNames();
   }
-
+  function helloBlock(p, c, per) {
+    let sel = '';
+    if (S.isOwner) sel = `<label class="note" for="ver" style="margin-left:auto">Ver como</label><select id="ver">` + Object.values(S.pessoas).filter(x => x.ativo !== false || x.id === p.id).sort((a, b) => (a.ordem || 99) - (b.ordem || 99)).map(x => `<option value="${esc(x.id)}" ${x.id === p.id ? 'selected' : ''}>${esc(x.nome)}</option>`).join('') + `</select>`;
+    else if (!p.uid) sel = `<button class="btn ghost" id="trocar">Sair</button>`;
+    const ano = (per.fim || '').slice(0, 4); const team = c.m ? c.m.equipe : (p.equipe || '');
+    return `<div class="hello"><div class="avatar">${esc(initials(p.nome))}</div><div><h1>Olá, ${esc(p.nome)}</h1><p class="note">${esc(per.nome)} de ${esc((per.inicio || '').slice(0, 4))} · ${dm(per.inicio)} a ${dm(per.fim)}${team ? ' · ' + esc(team) : ''}</p></div>${sel}</div>`;
+  }
   const GLOBAL_DESDE = '2026-11';
   function placasDoPeriodo(pid) {
     // Meta do time: pontos de produção de cada missão do mês, contada uma vez. Não entram o bônus/desconto do Trello nem elogio.
@@ -342,14 +414,23 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     return `<div class="who"><div class="avatar">${esc(initials(p.nome))}</div><div><div class="name">${esc(p.nome)}</div><div class="team">${esc(team)}</div></div>${sel}</div>`;
   }
   function heroBlock(p, c, per) {
-    const m = c.m; const pago = per.status === 'pago';
+    const m = c.m; const sq = S.saques[per.id + '_' + p.id];
+    const pago = per.status === 'pago' || (sq && sq.status === 'pago');
+    const estado = pago ? 'pago' : per.fechado ? 'aprovado' : 'previsto';
     let pill = c.res === 'supermeta' ? '<span class="pill super">Supermeta</span>' : c.res === 'meta' ? '<span class="pill meta">Meta batida</span>' : '<span class="pill rumo">Rumo à meta</span>';
-    let lbl = per.fechado ? (pago ? 'Pago em ' + dmy(per.pagamento) : 'Valor final · a receber em ' + dmy(per.pagamento)) : 'Valor final previsto · paga em ' + dmy(per.pagamento);
+    const lbl = estado === 'pago' ? 'Seu ganho · pago' : estado === 'aprovado' ? 'Seu ganho aprovado' : 'Seu ganho previsto';
     let h = `<section class="hero" aria-label="Saldo"><div class="row"><span class="lbl">${esc(lbl)}</span>${pago ? '<span class="pill pago">Pago</span>' : pill}</div>`;
     if (c.valor == null) h += `<div class="money zero">${c.pts} pts</div><div class="sub">Período anterior ao app: o valor foi pago fora daqui.</div>`;
     else if (m && !per.fechado && c.pts < m.meta) h += `<div class="money">${brl(c.acum)}</div><div class="sub">Acumulado até agora. Libera quando você bater a meta: faltam <b>${m.meta - c.pts} pts</b>.</div>`;
     else if (m && per.fechado && c.pts < m.meta) h += `<div class="money zero">${brl(0)}</div><div class="sub">A meta não foi batida neste período (${c.pts} de ${m.meta} pts).</div>`;
     else h += `<div class="money ${c.valor ? '' : 'zero'}">${brl(c.valor)}</div>`;
+    if (c.valor != null) {
+      const ix = { previsto: 0, aprovado: 1, pago: 2 }[estado];
+      const st = [['Previsto', per.fechado ? 'mês fechado em ' + dm(per.fim) : 'até ' + dm(per.fim) + ', muda a cada missão'], ['Aprovado', per.fechado ? 'conferido, a pagar' : 'a partir de ' + dm(per.fim)], ['Pago', pago ? (sq && sq.status === 'pago' && sq.em ? 'pedido ' + esc(sq.id) : 'em ' + dm(per.pagamento)) : 'previsto ' + dm(per.pagamento)]];
+      h += `<div class="sub" style="margin-top:-6px">${c.pts} pontos individuais</div>`;
+      h += `<div class="steps" aria-label="Situação do valor">` + st.map((x, k) => `<div class="st ${k < ix ? 'done' : ''} ${k === ix ? 'on' : ''}"><b>${k < ix ? '✓ ' : ''}${x[0]}</b>${x[1]}</div>`).join('') + `</div>`;
+      h += `<div class="comp">Competência: <b>${esc(per.nome)}</b> (${dmy(per.inicio)} a ${dmy(per.fim)}) · pagamento previsto em <b>${dmy(per.pagamento)}</b></div>`;
+    }
     if (c.cap) h += `<div class="next">🪖 <b>Capacete de ${c.cap.nome}</b> (${c.cap.meses} meses seguidos de supermeta): +${Math.round(c.cap.pct * 100)}% no bônus, <b>+${brl(c.cap.extra)}</b> já somados.</div>`;
     else if (m && !c.fromHist && per.id >= CAP_DESDE && !per.fechado) {
       const prev = streakAt(per.id, p.id) || 0; const ant = c.res === 'supermeta' ? prev : (() => { const ps = periodsSorted(); const i = ps.findIndex(x => x.id === per.id); return i > 0 ? streakAt(ps[i - 1].id, p.id) : 0; })();
@@ -381,15 +462,54 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     }
     return h + `</section>`;
   }
+  const SAQUE_FORM = 'https://docs.google.com/forms/d/e/1FAIpQLSco3o-jt3oMdpyCHarbOFaw4Z9zgJH998Ulrmcb4zAXsuVVhw/formResponse';
+  const SAQUE_ENTRY = 'entry.1009632048';
+  const SAQUE_CSV = 'https://docs.google.com/spreadsheets/d/1zXWwhC6KeDKxBfSd-mDfVc2xSGML5qR0ZhZXvQfeH0E/pub?gid=1480749310&single=true&output=csv';
+  const SAQUE_PLANILHA = 'https://docs.google.com/spreadsheets/d/1zXWwhC6KeDKxBfSd-mDfVc2xSGML5qR0ZhZXvQfeH0E/edit';
+  function parseCSV(t) {
+    const rows = []; let row = [], f = '', q = false;
+    for (let i = 0; i < t.length; i++) { const ch = t[i];
+      if (q) { if (ch === '"') { if (t[i + 1] === '"') { f += '"'; i++; } else q = false; } else f += ch; }
+      else if (ch === '"') q = true; else if (ch === ',') { row.push(f); f = ''; } else if (ch === '\n' || ch === '\r') { if (ch === '\r' && t[i + 1] === '\n') i++; row.push(f); rows.push(row); row = []; f = ''; } else f += ch; }
+    if (f || row.length) { row.push(f); rows.push(row); }
+    return rows;
+  }
+  async function loadSaques() {
+    try {
+      const r = await fetch(SAQUE_CSV + '&t=' + Date.now(), { cache: 'no-store' }); if (!r.ok) throw 0;
+      const rows = parseCSV(await r.text()); const out = {};
+      rows.slice(1).forEach(rw => {
+        const parts = (rw[1] || '').split('|'); if (parts.length < 4) return;
+        const [id, pessoa, periodo, valor, pts] = parts; const st = (rw[2] || '').trim().toLowerCase();
+        const status = st.startsWith('pag') ? 'pago' : st.startsWith('rej') || st.startsWith('recus') ? 'rejeitado' : 'pendente';
+        const k = periodo + '_' + pessoa; const prev = out[k];
+        if (!prev || prev.status === 'rejeitado' || status !== 'rejeitado' || prev.id === id) out[k] = { id, pessoa, periodo, valor: Number(valor), pts: Number(pts), em: rw[0], status, motivo: (rw[3] || '').trim() };
+      });
+      S.saques = out; S.saquesOk = true;
+    } catch (e) { S.saquesOk = false; }
+    render();
+  }
+  function saqueMsg(p, per, c, id) { return `Olá Almir! Aqui é ${p.nome}. Pedido de saque ${id}: bônus de ${per.nome} (${dmy(per.inicio)} a ${dmy(per.fim)}), ${brl(c.valor)} (${c.pts} pontos). Enviado pelo app Missões Worksun.`; }
   function saqueBlock(p, c, per) {
     if (per.status === 'pago') return '';
     const liberado = today() >= per.fim;
     if (!liberado) return `<button class="btn saque" disabled>Sacar dinheiro · libera em ${dmy(per.fim)}</button>`;
     if (!c.valor) return `<div class="note">Meta não batida neste período, sem valor para sacar.</div>`;
-    const key = 'ms_saque_' + per.id + '_' + p.id; const feito = LS.get(key);
-    if (feito) return `<button class="btn saque" disabled>Pedido de saque enviado · ${esc(feito)}</button><div class="note">${esc(p.nome)}, seu pedido de ${brl(c.valor)} já foi enviado. Pagamento previsto em ${dmy(per.pagamento)}.</div>`;
-    const msg = `Olá Almir! Aqui é ${p.nome}. Quero sacar meu bônus de ${per.nome}: ${brl(c.valor)} (${c.pts} pontos). Enviado pelo app Missões Worksun.`;
-    return `<button class="btn saque" id="sacar" data-key="${esc(key)}" data-msg="${esc(msg)}">Sacar dinheiro · ${brl(c.valor)}</button><div class="note">Abre o WhatsApp com o pedido de ${esc(p.nome)} pronto para enviar ao Almir. Depois de pedir, o botão fica bloqueado. Pagamento previsto em ${dmy(per.pagamento)}.</div>`;
+    const sq = S.saques[per.id + '_' + p.id];
+    let local = null; try { local = JSON.parse(LS.get('ms_saque2_' + per.id + '_' + p.id) || 'null'); } catch (e) {}
+    if (sq && sq.status === 'pago') return `<button class="btn saque" disabled>Saque pago ✓</button><div class="note">Pedido ${esc(sq.id)} de ${brl(sq.valor)} marcado como pago pelo Almir.</div>`;
+    const localSo = local && !(sq && sq.id === local.id);
+    const perdido = localSo && S.saquesOk && (Date.now() - new Date(local.em).getTime()) > 15 * 60000;
+    const pendente = (sq && sq.status === 'pendente') ? sq : (localSo && !perdido) ? local : null;
+    if (pendente) {
+      const reabrir = saqueMsg(p, per, c, pendente.id);
+      return `<button class="btn saque" disabled>Solicitação em análise</button><div class="saq-st">Pedido <b>${esc(pendente.id)}</b> de ${brl(c.valor)} registrado${sq && sq.status === 'pendente' ? '' : ' (confirmando no sistema)'}. O botão fica bloqueado em todos os celulares até o Almir marcar como pago ou rejeitar.</div><button class="linkbtn" id="reabrir" data-msg="${esc(reabrir)}">Não enviou a mensagem? Reabrir conversa no WhatsApp</button>`;
+    }
+    let aviso = '';
+    if (sq && sq.status === 'rejeitado') aviso = `<div class="saq-st bad">Pedido <b>${esc(sq.id)}</b> foi rejeitado${sq.motivo ? ': ' + esc(sq.motivo) : '.'} Você pode pedir de novo.</div>`;
+    if (perdido) aviso += `<div class="saq-st bad">O pedido <b>${esc(local.id)}</b> não chegou ao sistema. Peça de novo.</div>`;
+    if (S.saquesOk === false) aviso += `<div class="note">Sem conexão com o registro de saques agora. Tente de novo em instantes.</div>`;
+    return aviso + `<button class="btn saque" id="sacar" data-per="${esc(per.id)}" ${S.saquesOk === false ? 'disabled' : ''}>Solicitar saque · ${brl(c.valor)}</button><div class="note">${esc(p.nome)}, o pedido fica registrado no sistema e depois abre o WhatsApp com a mensagem pronta para o Almir. Pagamento previsto em ${dmy(per.pagamento)}.</div>`;
   }
   function missoesBlock(c) {
     if (c.fromHist && !c.rows.length) return `<div class="empty">Este período foi fechado antes do app. Só o total de pontos foi registrado.</div>`;
@@ -452,6 +572,9 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     const per = S.periodos[pid];
     let h = `<div class="card"><h3>Período ${esc(per.nome)}</h3><div class="note">${dmy(per.inicio)} a ${dmy(per.fim)} · pagamento ${dmy(per.pagamento)} · ${per.status === 'pago' ? 'pago' : per.fechado ? 'fechado, a pagar' : 'em andamento'}</div>` +
       (per.fechado ? `<div><button class="btn ${per.status === 'pago' ? 'ghost' : ''}" id="pago">${per.status === 'pago' ? 'Desmarcar pagamento' : 'Marcar como pago'}</button></div>` : '') + `</div>`;
+    const sqs = Object.values(S.saques).filter(x => x.periodo === pid);
+    h += `<div class="card"><h3>Pedidos de saque · ${esc(per.nome)}</h3>` + (sqs.length ? sqs.map(x => `<div class="admin-row"><div><b>${esc((S.pessoas[x.pessoa] || {}).nome || x.pessoa)}</b> · ${brl(x.valor)}<div class="note">${esc(x.id)} · ${esc(x.em)} · <b>${esc(x.status)}</b>${x.motivo ? ' · ' + esc(x.motivo) : ''}</div></div></div>`).join('') : '<div class="note">Nenhum pedido neste mês.</div>') +
+      `<div class="note">Para marcar, abra a planilha e escreva <b>pago</b> ou <b>rejeitado</b> na coluna status (e o motivo, se rejeitar). Os celulares do time veem a mudança em poucos minutos.</div><a href="${SAQUE_PLANILHA}" target="_blank" rel="noopener">Abrir planilha de saques</a></div>`;
     h += `<div class="card"><h3>Acesso do time</h3><div class="note">Vincule cada pessoa à conta dela. Pessoa vinculada vê só o próprio extrato e ninguém mais consegue escolher o nome dela.</div>`;
     Object.values(S.pessoas).filter(p => p.ativo !== false).sort((a, b) => (a.ordem || 99) - (b.ordem || 99)).forEach(p => {
       h += `<div class="admin-row"><div><b>${esc(p.nome)}</b> <span class="note" data-uidname="${esc(p.uid || '')}">${p.uid ? 'vinculado' : 'sem vínculo'}</span></div>` +
@@ -500,24 +623,32 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
       <b>Período:</b> do dia 11 ao dia 10, pela data em que o cartão foi para Missões concluídas. Pagamento no dia 15.<br>
       <b>Capacetes (a partir de dezembro):</b> supermeta em meses seguidos aumenta o bônus do mês. Bronze com 2 meses seguidos (+25%), Prata com 4 (+30%), Ouro com 6 (+35%).<br>
       <b>Meta do time:</b> somando os pontos de produção das missões do mês (cada missão uma vez, sem o bônus do Trello e sem elogio), 300 pontos dá um dia de pizza paga pela Worksun, e 350 pontos dá pizza mais R$ 100 para cada um.</div></details>
-      <p class="note">${when ? 'Atualizado do Trello em ' + esc(when) + '.' : ''} Faltas e férias podem reduzir o valor de forma proporcional no fechamento.</p>`;
+      <p class="note">Faltas e férias podem reduzir o valor de forma proporcional no fechamento.</p>`;
   }
 
   app.addEventListener('click', async ev => {
     const t = ev.target.closest('button'); if (!t) return;
     if (t.dataset.periodo) { S.view.periodo = t.dataset.periodo; render(); return; }
-    if (t.dataset.tab) { S.view.tab = t.dataset.tab; LS.set('ms_tab', t.dataset.tab); render(); return; }
+    if (t.dataset.tab) { S.view.tab = t.dataset.tab; LS.set('ms_tab2', t.dataset.tab); render(); try { window.scrollTo(0, 0); } catch (e) {} return; }
     if (t.dataset.sel) { S.loginSel = t.dataset.sel; const v = (document.getElementById('pin') || {}).value || ''; renderPicker(); const i = document.getElementById('pin'); if (i) { i.value = v; i.focus(); } return; }
     if (t.dataset.copy) { try { await navigator.clipboard.writeText(t.dataset.copy); t.textContent = 'Copiado'; } catch (e) { t.textContent = 'Copie o link ao lado'; } return; }
     if (t.id === 'trocar') { LS.set('ms_login', ''); S.loginSel = ''; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} renderPicker(); return; }
     if (t.id === 'instalar' && S.installEv) { S.installEv.prompt(); try { await S.installEv.userChoice; } catch (e) {} S.installEv = null; render(); return; }
     if (t.id === 'sacar') {
-      const w = window.open('https://wa.me/?text=' + encodeURIComponent(t.dataset.msg), '_blank', 'noopener');
-      if (!w) location.href = 'https://wa.me/?text=' + encodeURIComponent(t.dataset.msg);
-      const d = new Date(); const pad = n => String(n).padStart(2, '0');
-      LS.set(t.dataset.key, pad(d.getDate()) + '/' + pad(d.getMonth() + 1) + ' às ' + pad(d.getHours()) + ':' + pad(d.getMinutes()));
-      render(); return;
+      if (t.disabled) return; t.disabled = true; t.textContent = 'Registrando pedido…';
+      const slug = S.view.pessoa; const per = S.periodos[t.dataset.per]; const p = S.pessoas[slug]; const c = calc(per.id, slug);
+      const id = per.id.slice(2).replace('-', '') + '-' + slug.toUpperCase() + '-' + Math.random().toString(36).slice(2, 6).toUpperCase();
+      const win = window.open('', '_blank');
+      try {
+        const body = new URLSearchParams(); body.set(SAQUE_ENTRY, [id, slug, per.id, (Math.round(c.valor * 100) / 100).toFixed(2), c.pts, p.nome].join('|'));
+        await fetch(SAQUE_FORM, { method: 'POST', mode: 'no-cors', body });
+      } catch (e) { if (win) win.close(); t.disabled = false; t.textContent = 'Sem internet. Toque de novo para pedir'; return; }
+      LS.set('ms_saque2_' + per.id + '_' + slug, JSON.stringify({ id, em: new Date().toISOString() }));
+      const url = 'https://wa.me/?text=' + encodeURIComponent(saqueMsg(p, per, c, id));
+      if (win) win.location.href = url; else location.href = url;
+      render(); setTimeout(loadSaques, 4000); return;
     }
+    if (t.id === 'reabrir') { const url = 'https://wa.me/?text=' + encodeURIComponent(t.dataset.msg); const w = window.open(url, '_blank'); if (!w) location.href = url; return; }
     if (t.id === 'instalar-ios') { S.iosTip = !S.iosTip; render(); return; }
     if (t.id === 'pago' && S.isOwner) {
       const per = S.periodos[S.view.periodo]; t.disabled = true;
@@ -563,6 +694,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
       S.got = { pessoas: true, periodos: true, missoes: true, historico: true, pendencias: true, sync: true };
       render();
     }).catch(() => {});
+    loadSaques(); setInterval(loadSaques, 90000); document.addEventListener('visibilitychange', () => { if (!document.hidden) loadSaques(); });
     const db = (window.claude && window.claude.use) ? await window.claude.use('db') : null;
     if (!db) { if (!S.json) setTimeout(() => { if (!S.json) app.innerHTML = topBar('') + `<div class="empty">Não foi possível carregar as missões agora. Tente de novo em instantes.</div>`; }, 8000); return; }
     S.db = db; S.json = false; S.got = {};
