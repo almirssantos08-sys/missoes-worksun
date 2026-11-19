@@ -193,7 +193,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
   const S = { db: null, user: null, myId: null, isOwner: false, pessoas: {}, periodos: {}, missoes: [], hist: {}, pend: [], sync: null, got: {}, timedOut: false,
     view: { periodo: null, pessoa: null, tab: 'inicio' }, adminQ: {}, adminHits: {}, saques: {}, saquesOk: null };
   const LS = { get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }, set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} } };
-  S.view.tab = ['inicio', 'missoes', 'ranking'].includes(LS.get('ms_tab2')) ? LS.get('ms_tab2') : 'inicio';
+  S.view.tab = ['inicio', 'missoes', 'ranking', 'admin'].includes(LS.get('ms_tab2')) ? LS.get('ms_tab2') : 'inicio';
 
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const brl = v => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -270,13 +270,23 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
   function resolvePessoa() {
     const ativos = Object.values(S.pessoas).filter(p => p.ativo !== false).sort((a, b) => (a.ordem || 99) - (b.ordem || 99));
     if (S.isOwner) {
-      const saved = LS.get('ms_ver'); const ok = id => S.pessoas[id] && S.pessoas[id].ativo !== false;
-      return ok(S.view.pessoa) ? S.view.pessoa : (ok(saved) ? saved : (ativos[0] && ativos[0].id));
+      const saved = LS.get('ms_ver'); const ok = id => S.pessoas[id] && S.pessoas[id].ativo !== false && !S.pessoas[id].admin;
+      const time = ativos.filter(p => !p.admin);
+      return ok(S.view.pessoa) ? S.view.pessoa : (ok(saved) ? saved : (time[0] && time[0].id));
     }
     const linked = Object.values(S.pessoas).find(p => S.myId && p.uid === S.myId);
     if (linked) return linked.id;
     const lg = (LS.get('ms_login') || '').split('|');
-    if (lg[0] && S.pessoas[lg[0]] && S.pessoas[lg[0]].ativo !== false && S.pessoas[lg[0]].pinHash && S.pessoas[lg[0]].pinHash === lg[1]) return lg[0];
+    if (lg[0] && S.pessoas[lg[0]] && S.pessoas[lg[0]].ativo !== false && S.pessoas[lg[0]].pinHash && S.pessoas[lg[0]].pinHash === lg[1]) {
+      S.loginId = lg[0];
+      if (S.pessoas[lg[0]].admin) {
+        S.isAdmin = true;
+        const time = ativos.filter(p => !p.admin); const saved = LS.get('ms_ver'); const ok = id => S.pessoas[id] && S.pessoas[id].ativo !== false && !S.pessoas[id].admin;
+        return ok(S.view.pessoa) ? S.view.pessoa : (ok(saved) ? saved : (time[0] && time[0].id));
+      }
+      return lg[0];
+    }
+    S.isAdmin = false; S.loginId = null;
     return null;
   }
 
@@ -288,7 +298,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     admin: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19 12a7 7 0 0 0-.1-1.2l2-1.6-2-3.4-2.4 1a7 7 0 0 0-2-1.2L14 3h-4l-.5 2.6a7 7 0 0 0-2 1.2l-2.4-1-2 3.4 2 1.6a7 7 0 0 0 0 2.4l-2 1.6 2 3.4 2.4-1a7 7 0 0 0 2 1.2L10 21h4l.5-2.6a7 7 0 0 0 2-1.2l2.4 1 2-3.4-2-1.6c.1-.4.1-.8.1-1.2z"/></svg>'
   };
   function navBar(tab, nPend) {
-    const it = [['inicio', 'Início'], ['missoes', 'Missões'], ['ranking', 'Ranking']].concat(S.isOwner ? [['admin', 'Admin']] : []);
+    const it = [['inicio', 'Início'], ['missoes', 'Missões'], ['ranking', 'Ranking']].concat(S.isOwner || S.isAdmin ? [['admin', 'Admin']] : []);
     return `<nav class="navbar" aria-label="Navegação"><div class="in">` + it.map(([k, l]) =>
       `<button data-tab="${k}" ${tab === k ? 'aria-current="page"' : ''}>${NAV_IC[k]}${l}${k === 'missoes' && nPend ? `<span class="n">${nPend}</span>` : ''}</button>`).join('') +
       `<a href="regras.html">${NAV_IC.regras}Regras</a></div></nav>`;
@@ -327,7 +337,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     const pid = S.view.periodo; const per = S.periodos[pid]; const pessoa = S.pessoas[slug];
     const c = calc(pid, slug);
     const pend = S.pend.filter(p => p.periodo === pid && (p.pessoas || []).includes(slug));
-    const tab = S.view.tab === 'admin' && !S.isOwner ? 'inicio' : S.view.tab;
+    const tab = S.view.tab === 'admin' && !(S.isOwner || S.isAdmin) ? 'inicio' : S.view.tab;
     let h = topBar(periodChips());
     h += helloBlock(pessoa, c, per);
     h += staleBlock();
@@ -352,10 +362,11 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
   }
   function helloBlock(p, c, per) {
     let sel = '';
-    if (S.isOwner) sel = `<label class="note" for="ver" style="margin-left:auto">Ver como</label><select id="ver">` + Object.values(S.pessoas).filter(x => x.ativo !== false || x.id === p.id).sort((a, b) => (a.ordem || 99) - (b.ordem || 99)).map(x => `<option value="${esc(x.id)}" ${x.id === p.id ? 'selected' : ''}>${esc(x.nome)}</option>`).join('') + `</select>`;
+    const adm = S.isOwner || S.isAdmin;
+    if (adm) sel = `<div style="margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end"><label class="note" for="ver">Ver</label><select id="ver">` + Object.values(S.pessoas).filter(x => (x.ativo !== false || x.id === p.id) && !x.admin).sort((a, b) => (a.ordem || 99) - (b.ordem || 99)).map(x => `<option value="${esc(x.id)}" ${x.id === p.id ? 'selected' : ''}>${esc(x.nome)}</option>`).join('') + `</select>${S.isAdmin && !S.isOwner ? '<button class="btn ghost" id="trocar">Sair</button>' : ''}</div>`;
     else if (!p.uid) sel = `<button class="btn ghost" id="trocar">Sair</button>`;
     const ano = (per.fim || '').slice(0, 4); const team = c.m ? c.m.equipe : (p.equipe || '');
-    return `<div class="hello"><div class="avatar">${esc(initials(p.nome))}</div><div><h1>Olá, ${esc(p.nome)}</h1><p class="note">${esc(per.nome)} de ${esc((per.inicio || '').slice(0, 4))} · ${dm(per.inicio)} a ${dm(per.fim)}${team ? ' · ' + esc(team) : ''}</p></div>${sel}</div>`;
+    return `<div class="hello"><div class="avatar">${esc(initials(p.nome))}</div><div><h1>${adm && S.loginId && S.pessoas[S.loginId] ? 'Olá, ' + esc(S.pessoas[S.loginId].nome) + ' <span class="pill super" style="vertical-align:middle">Admin</span>' : 'Olá, ' + esc(p.nome)}</h1>${adm ? `<p class="note">Vendo o painel de <b>${esc(p.nome)}</b></p>` : ''}<p class="note">${esc(per.nome)} de ${esc((per.inicio || '').slice(0, 4))} · ${dm(per.inicio)} a ${dm(per.fim)}${team ? ' · ' + esc(team) : ''}</p></div>${sel}</div>`;
   }
   const GLOBAL_DESDE = '2026-11';
   function placasDoPeriodo(pid) {
@@ -562,10 +573,12 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
   function adminBlock(pid) {
     const per = S.periodos[pid];
     let h = `<div class="card"><h3>Período ${esc(per.nome)}</h3><div class="note">${dmy(per.inicio)} a ${dmy(per.fim)} · pagamento ${dmy(per.pagamento)} · ${per.status === 'pago' ? 'pago' : per.fechado ? 'fechado, a pagar' : 'em andamento'}</div>` +
-      (per.fechado ? `<div><button class="btn ${per.status === 'pago' ? 'ghost' : ''}" id="pago">${per.status === 'pago' ? 'Desmarcar pagamento' : 'Marcar como pago'}</button></div>` : '') + `</div>`;
+      (per.fechado && S.isOwner ? `<div><button class="btn ${per.status === 'pago' ? 'ghost' : ''}" id="pago">${per.status === 'pago' ? 'Desmarcar pagamento' : 'Marcar como pago'}</button></div>` : '') + `</div>`;
     const sqs = Object.values(S.saques).filter(x => x.periodo === pid);
     h += `<div class="card"><h3>Pedidos de saque · ${esc(per.nome)}</h3>` + (sqs.length ? sqs.map(x => `<div class="admin-row"><div><b>${esc((S.pessoas[x.pessoa] || {}).nome || x.pessoa)}</b> · ${brl(x.valor)}<div class="note">${esc(x.id)} · ${esc(x.em)} · <b>${esc(x.status)}</b>${x.motivo ? ' · ' + esc(x.motivo) : ''}</div></div></div>`).join('') : '<div class="note">Nenhum pedido neste mês.</div>') +
       `<div class="note">Para marcar, abra a planilha e escreva <b>pago</b> ou <b>rejeitado</b> na coluna status (e o motivo, se rejeitar). Os celulares do time veem a mudança em poucos minutos.</div><a href="${SAQUE_PLANILHA}" target="_blank" rel="noopener">Abrir planilha de saques</a></div>`;
+    h += resumoAdmin(pid);
+    if (S.isOwner) {
     h += `<div class="card"><h3>Acesso do time</h3><div class="note">Vincule cada pessoa à conta dela. Pessoa vinculada vê só o próprio extrato e ninguém mais consegue escolher o nome dela.</div>`;
     Object.values(S.pessoas).filter(p => p.ativo !== false).sort((a, b) => (a.ordem || 99) - (b.ordem || 99)).forEach(p => {
       h += `<div class="admin-row"><div><b>${esc(p.nome)}</b> <span class="note" data-uidname="${esc(p.uid || '')}">${p.uid ? 'vinculado' : 'sem vínculo'}</span></div>` +
@@ -573,10 +586,20 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
           `<input id="q-${esc(p.id)}" data-q="${esc(p.id)}" placeholder="Buscar conta pelo nome" value="${esc(S.adminQ[p.id] || '')}"><div class="hits" id="hits-${esc(p.id)}"></div>`) + `</div>`;
     });
     h += `<div class="note">A busca encontra pessoas da sua organização. Quem entra como convidado de fora pode escolher o próprio nome na primeira vez que abrir.</div></div>`;
-    const base = location.hostname.endsWith('claude.ai') || location.hostname.includes('claude') ? 'https://claude.ai/artifact/L1emgq2Fuv1UZ6VYkpiCuE' : location.origin + location.pathname;
+    }
+    const base = 'https://app.worksun.com.br/';
     h += `<div class="card"><h3>Link de cada instalador</h3><div class="note">Mande para cada um o próprio link. Abre direto no saldo dele, sem precisar de conta.</div>` +
-      Object.values(S.pessoas).filter(p => p.ativo !== false).sort((a, b) => (a.ordem || 99) - (b.ordem || 99)).map(p => `<div class="admin-row"><div><b>${esc(p.nome)}</b><div class="note">${esc(base)}#${esc(p.id)}</div></div><button class="btn ghost" data-copy="${esc(base + '#' + p.id)}">Copiar link</button></div>`).join('') + `</div>`;
+      Object.values(S.pessoas).filter(p => p.ativo !== false && !p.admin).sort((a, b) => (a.ordem || 99) - (b.ordem || 99)).map(p => `<div class="admin-row"><div><b>${esc(p.nome)}</b><div class="note">${esc(base)}#${esc(p.id)}</div></div><button class="btn ghost" data-copy="${esc(base + '#' + p.id)}">Copiar link</button></div>`).join('') + `</div>`;
     return h;
+  }
+  function resumoAdmin(pid) {
+    const per = S.periodos[pid];
+    const ids = Object.keys(S.pessoas).filter(s => !S.pessoas[s].admin && S.pessoas[s].ativo !== false && ((per.metas && per.metas[s]) || S.hist[pid + '_' + s]));
+    const rs = ids.map(s => ({ s, c: calc(pid, s), pend: S.pend.filter(p => p.periodo === pid && (p.pessoas || []).includes(s)).length })).sort((a, b) => b.c.pts - a.c.pts);
+    let tot = 0;
+    const linhas = rs.map(x => { tot += x.c.valor || 0; const sq = S.saques[pid + '_' + x.s];
+      return `<div class="admin-row"><div><b>${esc(S.pessoas[x.s].nome)}</b> · ${x.c.pts} pts · ${x.c.res === 'supermeta' ? 'supermeta' : x.c.res === 'meta' ? 'meta' : 'abaixo da meta'}<div class="note">${per.fechado ? 'Valor' : 'Previsto'}: <b>${brl(x.c.valor || (per.fechado ? 0 : x.c.acum))}</b> · ${x.pend} pendência${x.pend === 1 ? '' : 's'}${sq ? ' · saque ' + esc(sq.status) : ''}</div></div><button class="btn ghost" data-ver="${esc(x.s)}">Ver</button></div>`; }).join('');
+    return `<div class="card"><h3>Resumo do time · ${esc(per.nome)}</h3>${linhas || '<div class="note">Sem pessoas com meta neste mês.</div>'}<div class="note">Total ${per.fechado ? 'a pagar' : 'se o mês fechasse hoje'}: <b>${brl(tot)}</b></div></div>`;
   }
   async function fillAdminNames() {
     if (!S.user) return;
@@ -590,7 +613,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     const hs = (location.hash || '').replace('#', '');
     const pre = S.loginSel || (S.pessoas[hs] ? hs : '');
     app.innerHTML = topBar('') + `<form class="hero" id="login" autocomplete="off"><span class="lbl">Entrar</span><div style="font-size:22px;font-weight:700">Suas missões e seu saldo</div><div class="sub">Escolha seu nome e digite o código de acesso que o Almir te passou. O app guarda o login neste celular.</div>` +
-      `<div class="picker">${ativos.map(p => `<button type="button" class="btn ${p.id === pre ? '' : 'ghost'}" data-sel="${esc(p.id)}" aria-pressed="${p.id === pre}">${esc(p.nome)}</button>`).join('')}</div>` +
+      `<div class="picker">${ativos.map(p => `<button type="button" class="btn ${p.id === pre ? '' : 'ghost'}" data-sel="${esc(p.id)}" aria-pressed="${p.id === pre}">${esc(p.nome)}${p.admin ? ' · gestão' : ''}</button>`).join('')}</div>` +
       `<label class="lbl" for="pin">Código de acesso</label><input id="pin" class="pin" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="6 números" autocomplete="one-time-code">` +
       `${msg ? `<div class="note" style="color:var(--bad)">${esc(msg)}</div>` : ''}<button class="btn saque" type="submit">Entrar</button></form>` + footer();
   }
@@ -620,10 +643,11 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
   app.addEventListener('click', async ev => {
     const t = ev.target.closest('button'); if (!t) return;
     if (t.dataset.periodo) { S.view.periodo = t.dataset.periodo; render(); return; }
+    if (t.dataset.ver) { S.view.pessoa = t.dataset.ver; LS.set('ms_ver', t.dataset.ver); S.view.tab = 'inicio'; LS.set('ms_tab2', 'inicio'); render(); try { window.scrollTo(0, 0); } catch (e) {} return; }
     if (t.dataset.tab) { S.view.tab = t.dataset.tab; LS.set('ms_tab2', t.dataset.tab); render(); try { window.scrollTo(0, 0); } catch (e) {} return; }
     if (t.dataset.sel) { S.loginSel = t.dataset.sel; const v = (document.getElementById('pin') || {}).value || ''; renderPicker(); const i = document.getElementById('pin'); if (i) { i.value = v; i.focus(); } return; }
     if (t.dataset.copy) { try { await navigator.clipboard.writeText(t.dataset.copy); t.textContent = 'Copiado'; } catch (e) { t.textContent = 'Copie o link ao lado'; } return; }
-    if (t.id === 'trocar') { LS.set('ms_login', ''); S.loginSel = ''; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} renderPicker(); return; }
+    if (t.id === 'trocar') { LS.set('ms_login', ''); S.loginSel = ''; S.isAdmin = false; S.loginId = null; S.view.pessoa = null; try { history.replaceState(null, '', location.pathname + location.search); } catch (e) {} renderPicker(); return; }
     if (t.id === 'instalar' && S.installEv) { S.installEv.prompt(); try { await S.installEv.userChoice; } catch (e) {} S.installEv = null; render(); return; }
     if (t.id === 'sacar') {
       if (t.disabled) return; t.disabled = true; t.textContent = 'Registrando pedido…';
