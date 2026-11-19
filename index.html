@@ -232,13 +232,16 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
       .sort((a, b) => (a.data + (a.ordem || '') + a.cliente) < (b.data + (b.ordem || '') + b.cliente) ? -1 : 1);
     let cum = 0;
     const rows = ms.map(x => {
-      const pts = Number(x.ptsPorPessoa && x.ptsPorPessoa[slug] != null ? x.ptsPorPessoa[slug] : x.pts) || 0; const before = cum; cum += pts; let ef = { kind: 'none' };
+      let pts, fator = 1; const ex = Number(x.extra && x.extra[slug]) || 0;
+      if (per && per.equivalente) { const n = (x.pessoas || []).length || 1; const t = Number(x.trello) || 0; fator = 3 / n; pts = Math.round(((Number(x.pts) || 0) - t) * fator * 10) / 10 + t + ex; }
+      else pts = (Number(x.ptsPorPessoa && x.ptsPorPessoa[slug] != null ? x.ptsPorPessoa[slug] : x.pts) || 0) + ex;
+      const before = cum; cum = Math.round((cum + pts) * 10) / 10; let ef = { kind: 'none' };
       if (m) {
         if (before < m.meta && cum >= m.meta) ef = { kind: 'meta', v: m.fixo + (cum - m.meta) };
         else if (before >= m.meta) ef = { kind: 'rs', v: pts };
         else ef = { kind: 'acum', v: pts * m.fixo / m.meta, falta: m.meta - cum };
       }
-      return Object.assign({}, x, { pts, before, cum, ef });
+      return Object.assign({}, x, { pts, before, cum, ef, fator, ex });
     });
     const h = S.hist[pid + '_' + slug];
     const fromHist = !!h && (!ms.length || h.oficial);
@@ -336,7 +339,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     if (!slug) { renderPicker(); return; }
     const pid = S.view.periodo; const per = S.periodos[pid]; const pessoa = S.pessoas[slug];
     const c = calc(pid, slug);
-    const pend = S.pend.filter(p => p.periodo === pid && (p.pessoas || []).includes(slug));
+    const pend = S.pend.filter(p => (p.periodo === pid || (p.prazo && p.prazo >= today())) && (p.pessoas || []).includes(slug));
     const tab = S.view.tab === 'admin' && !(S.isOwner || S.isAdmin) ? 'inicio' : S.view.tab;
     let h = topBar(periodChips());
     h += helloBlock(pessoa, c, per);
@@ -435,10 +438,11 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     else if (m && !per.fechado && c.pts < m.meta) h += `<div class="money">${brl(c.acum)}</div><div class="sub">Acumulado até agora. Libera quando você bater a meta: faltam <b>${m.meta - c.pts} pts</b>.</div>`;
     else if (m && per.fechado && c.pts < m.meta) h += `<div class="money zero">${brl(0)}</div><div class="sub">A meta não foi batida neste período (${c.pts} de ${m.meta} pts).</div>`;
     else h += `<div class="money ${c.valor ? '' : 'zero'}">${brl(c.valor)}</div>`;
+    if (per.prazoCorrecao && today() <= per.prazoCorrecao) h += `<div class="stale" style="margin-top:4px">📸 Auditoria de ${esc(per.nome)}: corrija fotos e checklists no Trello até <b>${dmy(per.prazoCorrecao)}</b>. O que não for corrigido fica com −6 (e serviço sem foto fica zerado). Veja em <b>Missões</b>.</div>`;
     if (c.valor != null) {
       const ix = { previsto: 0, aprovado: 1, pago: 2 }[estado];
       const st = [['Previsto', per.fechado ? 'mês fechado em ' + dm(per.fim) : 'até ' + dm(per.fim) + ', muda a cada missão'], ['Aprovado', per.fechado ? 'conferido, a pagar' : 'a partir de ' + dm(per.fim)], ['Pago', pago ? (sq && sq.status === 'pago' && sq.em ? 'pedido ' + esc(sq.id) : 'em ' + dm(per.pagamento)) : 'previsto ' + dm(per.pagamento)]];
-      h += `<div class="sub" style="margin-top:-6px">${c.pts} pontos individuais</div>`;
+      h += `<div class="sub" style="margin-top:-6px">${String(c.pts).replace('.', ',')} pontos individuais</div>`;
       h += `<div class="steps" aria-label="Situação do valor">` + st.map((x, k) => `<div class="st ${k < ix ? 'done' : ''} ${k === ix ? 'on' : ''}"><b>${k < ix ? '✓ ' : ''}${x[0]}</b>${x[1]}</div>`).join('') + `</div>`;
       h += `<div class="comp">Competência: <b>${esc(per.nome)}</b> (${dmy(per.inicio)} a ${dmy(per.fim)}) · pagamento previsto em <b>${dmy(per.pagamento)}</b></div>`;
     }
@@ -503,8 +507,9 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
   function saqueMsg(p, per, c, id) { return `Olá Almir! Aqui é ${p.nome}. Pedido de saque ${id}: bônus de ${per.nome} (${dmy(per.inicio)} a ${dmy(per.fim)}), ${brl(c.valor)} (${c.pts} pontos). Enviado pelo app Missões Worksun.`; }
   function saqueBlock(p, c, per) {
     if (per.status === 'pago') return '';
-    const liberado = today() >= per.fim;
-    if (!liberado) return `<button class="btn saque" disabled>Sacar dinheiro · libera em ${dmy(per.fim)}</button>`;
+    const libera = per.prazoCorrecao && per.prazoCorrecao >= per.fim ? per.prazoCorrecao : per.fim;
+    const liberado = per.prazoCorrecao ? today() > per.prazoCorrecao : today() >= per.fim;
+    if (!liberado) return `<button class="btn saque" disabled>Sacar dinheiro · libera ${per.prazoCorrecao ? 'depois de ' + dmy(libera) : 'em ' + dmy(libera)}</button>${per.prazoCorrecao ? `<div class="note">Prazo para corrigir fotos e checklists no Trello até <b>${dmy(per.prazoCorrecao)}</b>. O valor pode subir com as correções.</div>` : ''}`;
     if (!c.valor) return `<div class="note">Meta não batida neste período, sem valor para sacar.</div>`;
     const sq = S.saques[per.id + '_' + p.id];
     let local = null; try { local = JSON.parse(LS.get('ms_saque2_' + per.id + '_' + p.id) || 'null'); } catch (e) {}
@@ -531,12 +536,15 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
       if (r.fonte === 'WhatsApp') tags.push('<span class="tag wa">Pelo WhatsApp</span>');
       if (r.fonte === 'Planilha') tags.push('<span class="tag">Planilha</span>');
       if (r.status === 'analise') tags.push('<span class="tag wa">Em análise</span>');
+      if (r.semFoto) tags.push(`<span class="tag no">Sem fotos: 0 pts até colocar (vale ${esc(r.valeComFoto)})</span>`);
+      if (r.fator && r.fator !== 1) tags.push(`<span class="tag">${(r.pessoas || []).length} pessoas · ×${String(Math.round(r.fator * 100) / 100).replace('.', ',')}</span>`);
+      if (r.ex) tags.push(`<span class="tag ok">Checklist exemplar +${r.ex}</span>`);
       (r.extras || []).forEach(t => tags.push(`<span class="tag">${esc(t)}</span>`));
       let e = '';
       if (r.ef.kind === 'meta') e = `<div class="e meta">Meta batida · ${brl(r.ef.v)}</div>`;
       else if (r.ef.kind === 'rs') e = `<div class="e rs">${r.pts >= 0 ? '+' : '−'}${brl(Math.abs(r.ef.v))}</div>`;
       else if (r.ef.kind === 'acum') e = `<div class="e rs" style="opacity:.75">${r.pts >= 0 ? '+' : '−'}${brl(Math.abs(r.ef.v))}</div>`;
-      return `<div class="item"><div class="ico">${ICONS[r.tipo] || ICONS.instalacao}</div><div><div class="c">${esc(r.cliente)}</div><div class="d">${r.semData ? '' : dm(r.data) + ' · '}${esc(TIPO[r.tipo] || r.tipo)}${r.detalhe && r.detalhe !== (TIPO[r.tipo] || '') ? ' · ' + esc(r.detalhe) : ''}</div>${tags.length ? `<div class="tags">${tags.join('')}</div>` : ''}</div><div class="right"><div class="p ${r.pts < 0 ? 'neg' : ''}">${r.pts >= 0 ? '+' : ''}${r.pts}</div>${e}</div></div>`;
+      return `<div class="item"><div class="ico">${ICONS[r.tipo] || ICONS.instalacao}</div><div><div class="c">${esc(r.cliente)}</div><div class="d">${r.semData ? '' : dm(r.data) + ' · '}${esc(TIPO[r.tipo] || r.tipo)}${r.detalhe && r.detalhe !== (TIPO[r.tipo] || '') ? ' · ' + esc(r.detalhe) : ''}</div>${tags.length ? `<div class="tags">${tags.join('')}</div>` : ''}</div><div class="right"><div class="p ${r.pts < 0 ? 'neg' : ''}">${r.pts >= 0 ? '+' : ''}${String(r.pts).replace('.', ',')}</div>${e}</div></div>`;
     }).join('') + `</div>`;
   }
   function rankingBlock(pid, slug) {
@@ -552,7 +560,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
   }
   function pendBlock(pend) {
     if (!pend.length) return `<div class="empty">Nenhuma pendência nos seus cartões. Cartão completo vale +3 em cada missão.</div>`;
-    return `<div class="list">` + pend.map(p => `<div class="card"><h3>${esc(p.cliente)}</h3><ul>${(p.falta || []).map(f => `<li>${esc(f)}</li>`).join('')}</ul>${p.ganho ? `<div class="gain">Completando o cartão: +${esc(p.ganho)} pts</div>` : ''}${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">Abrir no Trello</a>` : ''}</div>`).join('') + `</div><p class="note">As pendências são conferidas no Trello de hora em hora. Corrigiu o cartão? Ele sai desta lista na próxima atualização.</p>`;
+    return `<div class="list">` + pend.map(p => `<div class="card"><h3>${esc(p.cliente)}${p.prazo ? ` <span class="note">· ${esc((S.periodos[p.periodo] || {}).nome || p.periodo)} · corrigir até ${dmy(p.prazo)}</span>` : ''}</h3><ul>${(p.falta || []).map(f => `<li>${esc(f)}</li>`).join('')}</ul>${p.ganho ? `<div class="gain">Completando o cartão: +${esc(p.ganho)} pts</div>` : ''}${p.url ? `<a href="${esc(p.url)}" target="_blank" rel="noopener">Abrir no Trello</a>` : ''}</div>`).join('') + `</div><p class="note">As pendências são conferidas no Trello de hora em hora. Corrigiu o cartão? Ele sai desta lista na próxima atualização.</p>`;
   }
   const TIERS = [['Bronze', 2, '+25%', '#C98A4B'], ['Prata', 4, '+30%', '#C9D3DB'], ['Ouro', 6, '+35%', '#E9C24A']];
   function tierOf(n) { return n >= 6 ? TIERS[2] : n >= 4 ? TIERS[1] : n >= 2 ? TIERS[0] : null; }
@@ -597,7 +605,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     const rs = ids.map(s => ({ s, c: calc(pid, s), pend: S.pend.filter(p => p.periodo === pid && (p.pessoas || []).includes(s)).length })).sort((a, b) => b.c.pts - a.c.pts);
     let tot = 0;
     const linhas = rs.map(x => { tot += x.c.valor || 0; const sq = S.saques[pid + '_' + x.s];
-      return `<div class="admin-row"><div><b>${esc(S.pessoas[x.s].nome)}</b> · ${x.c.pts} pts · ${x.c.res === 'supermeta' ? 'supermeta' : x.c.res === 'meta' ? 'meta' : 'abaixo da meta'}<div class="note">${per.fechado ? 'Valor' : 'Previsto'}: <b>${brl(x.c.valor || (per.fechado ? 0 : x.c.acum))}</b> · ${x.pend} pendência${x.pend === 1 ? '' : 's'}${sq ? ' · saque ' + esc(sq.status) : ''}</div></div><button class="btn ghost" data-ver="${esc(x.s)}">Ver</button></div>`; }).join('');
+      return `<div class="admin-row"><div><b>${esc(S.pessoas[x.s].nome)}</b> · ${String(x.c.pts).replace('.', ',')} pts · ${x.c.res === 'supermeta' ? 'supermeta' : x.c.res === 'meta' ? 'meta' : 'abaixo da meta'}<div class="note">${per.fechado ? 'Valor' : 'Previsto'}: <b>${brl(x.c.valor || (per.fechado ? 0 : x.c.acum))}</b> · ${x.pend} pendência${x.pend === 1 ? '' : 's'}${sq ? ' · saque ' + esc(sq.status) : ''}</div></div><button class="btn ghost" data-ver="${esc(x.s)}">Ver</button></div>`; }).join('');
     return `<div class="card"><h3>Resumo do time · ${esc(per.nome)}</h3>${linhas || '<div class="note">Sem pessoas com meta neste mês.</div>'}<div class="note">Total ${per.fechado ? 'a pagar' : 'se o mês fechasse hoje'}: <b>${brl(tot)}</b></div></div>`;
   }
   async function fillAdminNames() {
