@@ -108,7 +108,7 @@ button, select, input { font-family: inherit; }
 .helmets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .helmet { background: var(--raised); border-radius: 12px; padding: 14px 10px; text-align: center; display: flex; flex-direction: column; gap: 6px; align-items: center; opacity: .55; }
 .helmet.on { opacity: 1; outline: 2px solid var(--lime); }
-.helmet svg { width: 40px; height: 40px; }
+.helmet svg { width: 56px; height: 40px; }
 .helmet b { font-size: 14px; }
 .helmet span { font-size: 12px; color: var(--muted); }
 table.hist { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -211,7 +211,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     remanejo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 8h13l-3-3M20 16H7l3 3"/></svg>'
   };
   const TIPO = { instalacao: 'Instalação', manutencao: 'Manutenção', padrao: 'Padrão de entrada', eletrico: 'Serviço elétrico', remocao: 'Remoção', remanejo: 'Remanejo' };
-  const HELMET = c => `<svg viewBox="0 0 48 48"><path d="M8 32a16 16 0 0 1 32 0z" fill="${c}"/><rect x="5" y="31" width="38" height="6" rx="3" fill="${c}"/><path d="M24 16v10" stroke="#142231" stroke-width="3"/></svg>`;
+  const HELMET = c => `<svg viewBox="0 0 64 46" aria-hidden="true"><ellipse cx="32" cy="41" rx="27" ry="4" fill="rgba(0,0,0,.25)"/><path d="M11 35 C11 19 20 9 32 9 C44 9 53 19 53 35 Z" fill="${c}"/><path d="M11 35 C11 19 20 9 32 9 C25 12 19 21 18 35 Z" fill="#fff" opacity=".22"/><path d="M46 35 C46 22 41 13 32 9 C44 9 53 19 53 35 Z" fill="#000" opacity=".14"/><path d="M27.5 10 C29 9.4 35 9.4 36.5 10 L37.5 35 L26.5 35 Z" fill="${c}"/><path d="M27.5 10 C29 9.4 35 9.4 36.5 10 L37.5 35 L26.5 35 Z" fill="#000" opacity=".10"/><path d="M29.5 11 L28.6 35" stroke="#fff" stroke-opacity=".35" stroke-width="1.2"/><circle cx="32" cy="25" r="4.2" fill="#fff" opacity=".9"/><path d="M32 22.3l.8 1.7 1.9.2-1.4 1.3.4 1.9-1.7-1-1.7 1 .4-1.9-1.4-1.3 1.9-.2z" fill="${c}"/><path d="M5 35.5 Q32 31 59 35.5 Q60 39 57 40 Q32 36.5 7 40 Q4 39 5 35.5 Z" fill="${c}"/><path d="M7 40 Q32 36.5 57 40 Q32 38.8 7 40 Z" fill="#000" opacity=".25"/><path d="M5 35.5 Q32 31 59 35.5" stroke="#fff" stroke-opacity=".3" stroke-width="1" fill="none"/></svg>`;
 
   function periodsSorted() { return Object.values(S.periodos).sort((a, b) => a.inicio < b.inicio ? -1 : 1); }
   function currentPeriodId() {
@@ -547,16 +547,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
   const TIERS = [['Bronze', 2, '+25%', '#C98A4B'], ['Prata', 4, '+30%', '#C9D3DB'], ['Ouro', 6, '+35%', '#E9C24A']];
   function tierOf(n) { return n >= 6 ? TIERS[2] : n >= 4 ? TIERS[1] : n >= 2 ? TIERS[0] : null; }
   function BONECO(cor, w) {
-    return `<svg class="boneco" width="${w}" height="${w}" viewBox="0 0 64 64" aria-hidden="true">
-      <path d="M18 62 v-12 a14 12 0 0 1 28 0 v12z" fill="#2F4A63"/>
-      <path d="M26 39 h12 l-2 23 h-8z" fill="#B8E14E" opacity=".9"/>
-      <circle cx="32" cy="28" r="10" fill="#E8B98A"/>
-      <circle cx="28.5" cy="29" r="1.3" fill="#142231"/><circle cx="35.5" cy="29" r="1.3" fill="#142231"/>
-      <path d="M28.5 33 q3.5 2.6 7 0" stroke="#142231" stroke-width="1.4" fill="none" stroke-linecap="round"/>
-      <path d="M20 24 a12 11 0 0 1 24 0z" fill="${cor}"/>
-      <rect x="17" y="23" width="30" height="4" rx="2" fill="${cor}"/>
-      <rect x="30.5" y="13.5" width="3" height="10" rx="1.5" fill="rgba(0,0,0,.18)"/>
-    </svg>`;
+    return `<svg class="boneco" width="${w}" height="${w}" viewBox="0 0 64 64" aria-hidden="true"><path d="M18 62 v-12 a14 12 0 0 1 28 0 v12z" fill="#2F4A63"/><path d="M26 39 h12 l-2 23 h-8z" fill="#B8E14E" opacity=".9"/><circle cx="32" cy="29" r="10" fill="#E8B98A"/><circle cx="28.5" cy="30" r="1.3" fill="#142231"/><circle cx="35.5" cy="30" r="1.3" fill="#142231"/><path d="M28.5 34 q3.5 2.6 7 0" stroke="#142231" stroke-width="1.4" fill="none" stroke-linecap="round"/><g transform="translate(14.4,3.5) scale(.55)"><ellipse cx="32" cy="41" rx="27" ry="4" fill="rgba(0,0,0,.25)"/><path d="M11 35 C11 19 20 9 32 9 C44 9 53 19 53 35 Z" fill="${cor}"/><path d="M11 35 C11 19 20 9 32 9 C25 12 19 21 18 35 Z" fill="#fff" opacity=".22"/><path d="M46 35 C46 22 41 13 32 9 C44 9 53 19 53 35 Z" fill="#000" opacity=".14"/><path d="M27.5 10 C29 9.4 35 9.4 36.5 10 L37.5 35 L26.5 35 Z" fill="${cor}"/><path d="M27.5 10 C29 9.4 35 9.4 36.5 10 L37.5 35 L26.5 35 Z" fill="#000" opacity=".10"/><path d="M29.5 11 L28.6 35" stroke="#fff" stroke-opacity=".35" stroke-width="1.2"/><circle cx="32" cy="25" r="4.2" fill="#fff" opacity=".9"/><path d="M32 22.3l.8 1.7 1.9.2-1.4 1.3.4 1.9-1.7-1-1.7 1 .4-1.9-1.4-1.3 1.9-.2z" fill="${cor}"/><path d="M5 35.5 Q32 31 59 35.5 Q60 39 57 40 Q32 36.5 7 40 Q4 39 5 35.5 Z" fill="${cor}"/><path d="M7 40 Q32 36.5 57 40 Q32 38.8 7 40 Z" fill="#000" opacity=".25"/><path d="M5 35.5 Q32 31 59 35.5" stroke="#fff" stroke-opacity=".3" stroke-width="1" fill="none"/></g></svg>`;
   }
   function capacetesBlock(slug) {
     const n = streak(slug);
