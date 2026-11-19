@@ -251,7 +251,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     let cap = null;
     if (!base && m && !fromHist && pid >= CAP_DESDE && res === 'supermeta') {
       const n = streakAt(pid, slug); const t = n >= 6 ? ['Ouro', 0.35] : n >= 4 ? ['Prata', 0.30] : n >= 2 ? ['Bronze', 0.25] : null;
-      if (t) { const extra = Math.round(valor * t[1] * 100) / 100; cap = { nome: t[0], pct: t[1], extra, meses: n }; valor += extra; acum += extra; }
+      if (t) { const extra = Math.round(m.fixo * t[1] * 100) / 100; cap = { nome: t[0], pct: t[1], extra, meses: n }; valor += extra; acum += extra; }
     }
     return { m, rows, pts, valor, acum, cap, res, servicos, fromHist, hist: h || null, per };
   }
@@ -442,11 +442,11 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
       h += `<div class="steps" aria-label="Situação do valor">` + st.map((x, k) => `<div class="st ${k < ix ? 'done' : ''} ${k === ix ? 'on' : ''}"><b>${k < ix ? '✓ ' : ''}${x[0]}</b>${x[1]}</div>`).join('') + `</div>`;
       h += `<div class="comp">Competência: <b>${esc(per.nome)}</b> (${dmy(per.inicio)} a ${dmy(per.fim)}) · pagamento previsto em <b>${dmy(per.pagamento)}</b></div>`;
     }
-    if (c.cap) h += `<div class="next">🪖 <b>Capacete de ${c.cap.nome}</b> (${c.cap.meses} meses seguidos de supermeta): +${Math.round(c.cap.pct * 100)}% no bônus, <b>+${brl(c.cap.extra)}</b> já somados.</div>`;
+    if (c.cap) h += `<div class="next">🪖 <b>Capacete de ${c.cap.nome}</b> (${c.cap.meses} meses seguidos de supermeta): +${Math.round(c.cap.pct * 100)}% sobre os ${brl(c.m.fixo)} da meta, <b>+${brl(c.cap.extra)}</b> já somados.</div>`;
     else if (m && !c.fromHist && per.id >= CAP_DESDE && !per.fechado) {
       const prev = streakAt(per.id, p.id) || 0; const ant = c.res === 'supermeta' ? prev : (() => { const ps = periodsSorted(); const i = ps.findIndex(x => x.id === per.id); return i > 0 ? streakAt(ps[i - 1].id, p.id) : 0; })();
       const alvo = ant + 1; const t = alvo >= 6 ? ['Ouro', 35] : alvo >= 4 ? ['Prata', 30] : alvo >= 2 ? ['Bronze', 25] : null;
-      if (t && c.res !== 'supermeta') h += `<div class="next">🪖 Batendo a supermeta (${m.super} pts) neste mês, você ganha o <b>Capacete de ${t[0]}</b>: +${t[1]}% em todo o bônus do mês.</div>`;
+      if (t && c.res !== 'supermeta') h += `<div class="next">🪖 Batendo a supermeta (${m.super} pts) neste mês, você ganha o <b>Capacete de ${t[0]}</b>: +${t[1]}% sobre os ${brl(m.fixo)} da meta (+${brl(m.fixo * t[1] / 100)}).</div>`;
     }
     if (m) {
       const max = Math.max(m.super * 1.25, c.pts * 1.05, 1);
@@ -634,7 +634,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
       <b>Valor:</b> bateu a meta, ganha R$ 160 (na dupla, R$ 106,67 até novembro e R$ 160 a partir de dezembro). Cada ponto acima da meta vale R$ 1. Até a meta, o valor vai acumulando a cada ponto e libera quando a meta é batida.<br>
       <b>Metas:</b> 2 pessoas 120 / supermeta 145 · 3 pessoas 180 / 200 · 4 pessoas 240 / 270.<br>
       <b>Período:</b> do dia 11 ao dia 10, pela data em que o cartão foi para Missões concluídas. Pagamento no dia 15.<br>
-      <b>Capacetes (a partir de dezembro):</b> supermeta em meses seguidos aumenta o bônus do mês. Bronze com 2 meses seguidos (+25%), Prata com 4 (+30%), Ouro com 6 (+35%).<br>
+      <b>Capacetes (a partir de dezembro):</b> supermeta em meses seguidos dá um adicional sobre o valor da meta (R$ 160). Bronze com 2 meses seguidos (+25% = R$ 40), Prata com 4 (+30% = R$ 48), Ouro com 6 (+35% = R$ 56).<br>
       <b>Meta do time:</b> somando os pontos de produção das missões do mês (cada missão uma vez, sem o bônus do Trello e sem elogio), 300 pontos dá um dia de pizza paga pela Worksun, e 350 pontos dá pizza mais R$ 100 para cada um.</div></details>
       <p class="note">Faltas e férias podem reduzir o valor de forma proporcional no fechamento.</p>`;
   }
