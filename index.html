@@ -230,17 +230,18 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
   }
   function calc(pid, slug, base) {
     const per = S.periodos[pid]; const m = per && per.metas ? per.metas[slug] : null;
+    const pp = per && per.modo === 'equipe' && m ? 3 / (m.tam || 3) : 1;
     const ms = S.missoes.filter(x => x.periodo === pid && (x.pessoas || []).includes(slug))
       .sort((a, b) => (a.data + (a.ordem || '') + a.cliente) < (b.data + (b.ordem || '') + b.cliente) ? -1 : 1);
     let cum = 0;
     const rows = ms.map(x => {
       let pts, fator = 1; const ex = Number(x.extra && x.extra[slug]) || 0;
-      if (per && per.equivalente) { const n = (x.pessoas || []).length || 1; const t = Number(x.trello) || 0; fator = 3 / n; pts = Math.round(((Number(x.pts) || 0) - t) * fator * 10) / 10 + t + ex; }
+      if (per && (per.equivalente || per.modo === 'equipe')) { const n = (x.pessoas || []).length || 1; const t = Number(x.trello) || 0; fator = (per.modo === 'equipe' ? ((m && m.tam) || 3) : 3) / n; pts = Math.round(((Number(x.pts) || 0) - t) * fator * 10) / 10 + t + ex; }
       else pts = (Number(x.ptsPorPessoa && x.ptsPorPessoa[slug] != null ? x.ptsPorPessoa[slug] : x.pts) || 0) + ex;
       const before = cum; cum = Math.round((cum + pts) * 10) / 10; let ef = { kind: 'none' };
       if (m) {
-        if (before < m.meta && cum >= m.meta) ef = { kind: 'meta', v: m.fixo + (cum - m.meta) };
-        else if (before >= m.meta) ef = { kind: 'rs', v: pts };
+        if (before < m.meta && cum >= m.meta) ef = { kind: 'meta', v: m.fixo + (cum - m.meta) * pp };
+        else if (before >= m.meta) ef = { kind: 'rs', v: pts * pp };
         else ef = { kind: 'acum', v: pts * m.fixo / m.meta, falta: m.meta - cum };
       }
       return Object.assign({}, x, { pts, before, cum, ef, fator, ex });
@@ -250,15 +251,15 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     const pts = fromHist ? (h.pts || 0) : cum;
     let valor = 0, res = 'abaixo';
     if (fromHist) { valor = h.valor == null ? null : h.valor; res = h.resultado || 'abaixo'; }
-    else if (m) { valor = pts >= m.meta ? m.fixo + (pts - m.meta) : 0; res = pts >= m.super ? 'supermeta' : pts >= m.meta ? 'meta' : 'abaixo'; }
+    else if (m) { valor = pts >= m.meta ? Math.round((m.fixo + (pts - m.meta) * pp) * 100) / 100 : 0; res = pts >= m.super ? 'supermeta' : pts >= m.meta ? 'meta' : 'abaixo'; }
     const servicos = ms.length || (fromHist ? (h.servicos || null) : 0);
-    let acum = m && !fromHist ? (pts >= m.meta ? m.fixo + (pts - m.meta) : Math.max(0, pts) * m.fixo / m.meta) : valor;
+    let acum = m && !fromHist ? (pts >= m.meta ? Math.round((m.fixo + (pts - m.meta) * pp) * 100) / 100 : Math.max(0, pts) * m.fixo / m.meta) : valor;
     let cap = null;
     if (!base && m && !fromHist && pid >= CAP_DESDE && res === 'supermeta') {
       const n = streakAt(pid, slug); const t = n >= 6 ? ['Ouro', 0.35] : n >= 4 ? ['Prata', 0.30] : n >= 2 ? ['Bronze', 0.25] : null;
       if (t) { const extra = Math.round(m.fixo * t[1] * 100) / 100; cap = { nome: t[0], pct: t[1], extra, meses: n }; valor += extra; acum += extra; }
     }
-    return { m, rows, pts, valor, acum, cap, res, servicos, fromHist, hist: h || null, per };
+    return { m, rows, pts, valor, acum, cap, res, servicos, fromHist, hist: h || null, per, pp, pct: m ? pts / m.meta : 0 };
   }
 
   function streak(slug) {
@@ -324,7 +325,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
   function rankPos(pid, slug) {
     const per = S.periodos[pid]; if (!per) return null;
     const ids = Object.keys(S.pessoas).filter(s => S.pessoas[s].ativo !== false && ((per.metas && per.metas[s]) || S.hist[pid + '_' + s]));
-    const rs = ids.map(s => ({ s, p: calc(pid, s).pts })).sort((a, b) => b.p - a.p || (S.pessoas[a.s].nome < S.pessoas[b.s].nome ? -1 : 1));
+    const rs = ids.map(s => ({ s, p: calc(pid, s).pct })).sort((a, b) => b.p - a.p || (S.pessoas[a.s].nome < S.pessoas[b.s].nome ? -1 : 1));
     const me = rs.find(x => x.s === slug); if (!me) return null;
     return { pos: rs.filter(x => x.p > me.p).length + 1, de: rs.length, empate: rs.filter(x => x.p === me.p).length > 1 };
   }
@@ -358,7 +359,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
       h += installBlock();
     }
     if (tab === 'missoes') { if (pend.length) h += `<h3 style="margin:0">Pendências no Trello</h3>` + pendBlock(pend) + `<h3 style="margin:0">Missões do mês</h3>`; h += missoesBlock(c); }
-    if (tab === 'ranking') { h += rankHome(pid, slug); h += `<p class="note">Desempate: quem tem os mesmos pontos fica na mesma posição. O valor em reais de cada um aparece só para a própria pessoa.</p>`; h += `<h3 style="margin:0">Seu capacete</h3>` + capacetesBlock(slug); }
+    if (tab === 'ranking') { h += rankHome(pid, slug); h += `<p class="note">O ranking usa a % da meta: 120 pontos na dupla valem o mesmo que 180 no trio. Quem tem a mesma % fica na mesma posição. O valor em reais de cada um aparece só para a própria pessoa.</p>`; h += `<h3 style="margin:0">Seu capacete</h3>` + capacetesBlock(slug); }
     if (tab === 'admin') h += adminBlock(pid);
     h += footer();
     h += navBar(tab, pend.length);
@@ -397,12 +398,12 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     const per = S.periodos[pid]; if (!per) return '';
     const ids = Object.keys(S.pessoas).filter(s => S.pessoas[s].ativo !== false && ((per.metas && per.metas[s]) || S.hist[pid + '_' + s]));
     if (!ids.length) return '';
-    const rs = ids.map(s => ({ s, c: calc(pid, s) })).sort((a, b) => b.c.pts - a.c.pts);
-    const max = Math.max(...rs.map(x => x.c.pts), 1); const med = ['🥇', '🥈', '🥉'];
-    return `<section class="card" aria-label="Ranking do time"><div class="row"><h3>Ranking do time · ${esc(per.nome)}</h3><span class="note">pontos</span></div>` + rs.map((x, i) => {
+    const rs = ids.map(s => ({ s, c: calc(pid, s) })).sort((a, b) => b.c.pct - a.c.pct);
+    const max = Math.max(...rs.map(x => x.c.pct), 1); const med = ['🥇', '🥈', '🥉'];
+    return `<section class="card" aria-label="Ranking do time"><div class="row"><h3>Ranking do time · ${esc(per.nome)}</h3><span class="note">% da meta</span></div>` + rs.map((x, i) => {
       const p = S.pessoas[x.s]; const tag = x.c.res === 'supermeta' ? '<span class="pill super">Super</span>' : x.c.res === 'meta' ? '<span class="pill meta">Meta</span>' : '';
-      return `<div class="rk ${x.s === slug ? 'me' : ''}"><span class="pos">${(k => med[k - 1] || k + 'º')(rs.filter(y => y.c.pts > x.c.pts).length + 1)}</span><span class="nm">${(t => BONECO(t ? t[3] : '#8A97A3', 22))(tierOf(streak(x.s)))}${esc(p.nome)} ${tag}</span><span class="bar"><i style="width:${x.c.pts / max * 100}%"></i></span><b>${x.c.pts}</b></div>`;
-    }).join('') + `</section>`;
+      return `<div class="rk ${x.s === slug ? 'me' : ''}"><span class="pos">${(k => med[k - 1] || k + 'º')(rs.filter(y => y.c.pct > x.c.pct).length + 1)}</span><span class="nm">${(t => BONECO(t ? t[3] : '#8A97A3', 22))(tierOf(streak(x.s)))}${esc(p.nome)} ${tag}</span><span class="bar"><i style="width:${Math.max(0, x.c.pct) / max * 100}%"></i></span><b title="${String(x.c.pts).replace('.', ',')} pts">${Math.round(x.c.pct * 100)}%</b></div>`;
+    }).join('') + `<div class="note" style="margin-top:6px">O ranking compara a % da meta de cada um, porque dupla e trio têm metas diferentes (120 e 180).</div></section>`;
   }
   function installBlock() {
     if (S.standalone) return '';
@@ -458,12 +459,12 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
       const max = Math.max(m.super * 1.25, c.pts * 1.05, 1);
       const pct = v => Math.max(0, Math.min(100, v / max * 100));
       h += `<div class="track" aria-label="${c.pts} pontos de ${m.meta} da meta"><div class="fill" style="width:${pct(c.pts)}%"></div><span class="mark" style="left:${pct(m.meta)}%">Meta ${m.meta}</span><span class="mark below" style="left:${pct(m.super)}%">Super ${m.super}</span></div>`;
-      h += `<div class="stats"><div class="stat"><b>${c.pts}</b><span>pontos</span></div><div class="stat"><b>${c.servicos == null ? '–' : c.servicos}</b><span>missões</span></div><div class="stat"><b>${c.pts >= m.meta ? '+' + (c.pts - m.meta) : m.meta - c.pts}</b><span>${c.pts >= m.meta ? 'acima da meta' : 'faltam p/ meta'}</span></div></div>`;
+      h += `<div class="stats"><div class="stat"><b>${String(c.pts).replace('.', ',')}</b><span>pontos · ${Math.round(c.pct * 100)}% da meta</span></div><div class="stat"><b>${c.servicos == null ? '–' : c.servicos}</b><span>missões</span></div><div class="stat"><b>${String(Math.round(Math.abs(c.pts - m.meta) * 10) / 10).replace('.', ',').replace(/^/, c.pts >= m.meta ? '+' : '')}</b><span>${c.pts >= m.meta ? 'acima da meta' : 'faltam p/ meta'}</span></div></div>`;
       if (!per.fechado) {
         let nx;
-        if (c.pts < m.meta) nx = `Cada ponto vale <b>${brl(m.fixo / m.meta)}</b> até a meta e <b>${brl(1)}</b> depois dela. Na meta, o acumulado vira <b>${brl(m.fixo)}</b>.`;
-        else if (c.pts < m.super) nx = `Cada ponto agora vale <b>+${brl(1)}</b>. Faltam <b>${m.super - c.pts} pts</b> para a supermeta, que conta para o capacete.`;
-        else nx = `Supermeta garantida. Cada ponto a mais vale <b>+${brl(1)}</b>.`;
+        if (c.pts < m.meta) nx = `Cada ponto vale <b>${brl(m.fixo / m.meta)}</b> até a meta e <b>${brl(c.pp)}</b> depois dela. Na meta, o acumulado vira <b>${brl(m.fixo)}</b>.`;
+        else if (c.pts < m.super) nx = `Cada ponto agora vale <b>+${brl(c.pp)}</b>. Faltam <b>${String(Math.round((m.super - c.pts) * 10) / 10).replace('.', ',')} pts</b> para a supermeta, que conta para o capacete.`;
+        else nx = `Supermeta garantida. Cada ponto a mais vale <b>+${brl(c.pp)}</b>.`;
         h += `<div class="next">${nx}</div>`;
       }
       if (!(per.status === 'pago') && (!per.fechado || (per.prazoCorrecao && today() <= per.prazoCorrecao))) {
@@ -619,10 +620,10 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
   function resumoAdmin(pid) {
     const per = S.periodos[pid];
     const ids = Object.keys(S.pessoas).filter(s => !S.pessoas[s].admin && S.pessoas[s].ativo !== false && ((per.metas && per.metas[s]) || S.hist[pid + '_' + s]));
-    const rs = ids.map(s => ({ s, c: calc(pid, s), pend: S.pend.filter(p => p.periodo === pid && (p.pessoas || []).includes(s)).length })).sort((a, b) => b.c.pts - a.c.pts);
+    const rs = ids.map(s => ({ s, c: calc(pid, s), pend: S.pend.filter(p => p.periodo === pid && (p.pessoas || []).includes(s)).length })).sort((a, b) => b.c.pct - a.c.pct);
     let tot = 0;
     const linhas = rs.map(x => { tot += x.c.valor || 0; const sq = S.saques[pid + '_' + x.s];
-      return `<div class="admin-row"><div><b>${esc(S.pessoas[x.s].nome)}</b> · ${String(x.c.pts).replace('.', ',')} pts · ${x.c.res === 'supermeta' ? 'supermeta' : x.c.res === 'meta' ? 'meta' : 'abaixo da meta'}<div class="note">${per.fechado ? 'Valor' : 'Previsto'}: <b>${brl(x.c.valor || (per.fechado ? 0 : x.c.acum))}</b> · ${x.pend} pendência${x.pend === 1 ? '' : 's'}${sq ? ' · saque ' + esc(sq.status) : ''}</div></div><button class="btn ghost" data-ver="${esc(x.s)}">Ver</button></div>`; }).join('');
+      return `<div class="admin-row"><div><b>${esc(S.pessoas[x.s].nome)}</b> · ${String(x.c.pts).replace('.', ',')} pts (${Math.round(x.c.pct * 100)}% da meta ${x.c.m ? x.c.m.meta : ''}) · ${x.c.res === 'supermeta' ? 'supermeta' : x.c.res === 'meta' ? 'meta' : 'abaixo da meta'}<div class="note">${per.fechado ? 'Valor' : 'Previsto'}: <b>${brl(x.c.valor || (per.fechado ? 0 : x.c.acum))}</b> · ${x.pend} pendência${x.pend === 1 ? '' : 's'}${sq ? ' · saque ' + esc(sq.status) : ''}</div></div><button class="btn ghost" data-ver="${esc(x.s)}">Ver</button></div>`; }).join('');
     return `<div class="card"><h3>Resumo do time · ${esc(per.nome)}</h3>${linhas || '<div class="note">Sem pessoas com meta neste mês.</div>'}<div class="note">Total ${per.fechado ? 'a pagar' : 'se o mês fechasse hoje'}: <b>${brl(tot)}</b></div></div>`;
   }
   async function fillAdminNames() {
@@ -656,7 +657,8 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     return `<details class="card"><summary>Como os pontos e o valor são calculados</summary><div class="rules">
       <b>Pontos por missão:</b> +1 por módulo (ou placa removida/remanejada), +5 padrão de entrada, +7 manutenção, +7 serviço elétrico de dia todo, +3 de meio-dia, +4 elogio do cliente.<br>
       <b>Trello:</b> cartão completo (checklist e fotos) +3; sem foto ou com item de checklist sem marcar −6 para toda a equipe. O checklist Comissionamento não conta.<br>
-      <b>Valor:</b> bateu a meta, ganha R$ 160 (na dupla, R$ 106,67 até novembro e R$ 160 a partir de dezembro). Cada ponto acima da meta vale R$ 1. Até a meta, o valor vai acumulando a cada ponto e libera quando a meta é batida.<br>
+      <b>Metas:</b> dupla 120 (supermeta 133), trio 180 (supermeta 200). Obra com mais gente que a sua equipe: pontos × tamanho da equipe ÷ pessoas na obra.<br>
+      <b>Valor:</b> bateu a meta, ganha R$ 160 (dupla e trio). Cada ponto acima da meta vale R$ 1,00 no trio e R$ 1,50 na dupla. Até a meta, o valor vai acumulando a cada ponto e libera quando a meta é batida.<br>
       <b>Metas:</b> 2 pessoas 120 / supermeta 145 · 3 pessoas 180 / 200 · 4 pessoas 240 / 270.<br>
       <b>Período:</b> do dia 11 ao dia 10, pela data em que o cartão foi para Missões concluídas. Pagamento no dia 15.<br>
       <b>Capacetes (a partir de dezembro):</b> supermeta em meses seguidos dá um adicional sobre o valor da meta (R$ 160). Bronze com 2 meses seguidos (+25% = R$ 40), Prata com 4 (+30% = R$ 48), Ouro com 6 (+35% = R$ 56).<br>
