@@ -517,7 +517,7 @@ details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
     }
     let aviso = '';
     if (sq && sq.status === 'rejeitado') aviso = `<div class="saq-st bad">Pedido <b>${esc(sq.id)}</b> foi rejeitado${sq.motivo ? ': ' + esc(sq.motivo) : '.'} Você pode pedir de novo.</div>`;
-    if (perdido) aviso += `<div class="saq-st bad">O pedido <b>${esc(local.id)}</b> não chegou ao sistema. Peça de novo.</div>`;
+    if (perdido) aviso += `<div class="saq-st bad">O pedido <b>${esc(local.id)}</b> não está mais no registro de saques (foi cancelado ou não chegou). Se ainda quiser receber, peça de novo.</div>`;
     if (S.isAdmin || S.isOwner) return aviso + `<button class="btn saque" disabled>Solicitar saque · ${brl(c.valor)}</button><div class="note">Visão de admin: só o próprio ${esc(p.nome)} pode pedir o saque pelo celular dele.</div>`;
     return aviso + `<button class="btn saque" id="sacar" data-per="${esc(per.id)}">Solicitar saque · ${brl(c.valor)}</button><div class="note">${esc(p.nome)}, o pedido vai direto para o escritório, com aviso por e-mail. Não precisa mandar mensagem. Pagamento previsto em ${dmy(per.pagamento)}.</div>`;
   }
